@@ -1,0 +1,41 @@
+# Deployment Configuration
+# ========================
+
+# Business Parameters
+business:
+  cost_false_positive: 5000 # Approving bad credit
+  cost_false_negative: 500 # Rejecting good credit
+  revenue_per_approval: 1200
+
+# Statistical Testing
+statistical:
+  alpha: 0.05
+  bonferroni_correction: true
+
+# Deployment Thresholds
+deployment:
+  accuracy_threshold: 0.75
+  confidence_threshold: 0.70
+  stability_threshold: 0.05
+
+# Model Serving
+serving:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  batch_size: 32
+  timeout: 30
+
+# Target Variable
+target:
+  bad_credit_statuses: ["2", "3", "4", "5"]
+  temporal_cutoff_months: -6
+
+# Feature Engineering
+features:
+  create_age_features: true
+  create_employment_features: true
+  create_income_features: true
+  create_composite_features: true
+  scale_numerical: true
+  encode_categorical: true

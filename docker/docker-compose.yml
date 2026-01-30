@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Development environment
+  dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: development
+    volumes:
+      - ..:/app
+      - ../data:/app/data:ro
+    environment:
+      - ML_GPU_ENABLED=false
+    command: python -m pytest tests/ -v
+
+  # Training pipeline
+  training:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: training
+    volumes:
+      - ../data:/app/data:ro
+      - ../ml_pipeline_output:/app/ml_pipeline_output
+    environment:
+      - ML_OPTUNA_TRIALS=50
+      - ML_GPU_ENABLED=false
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+
+  # Production inference
+  inference:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: inference
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../ml_pipeline_output/final_model:/app/models:ro
+    environment:
+      - MODEL_PATH=/app/models/model.joblib
+      - FEATURE_ENGINEER_PATH=/app/models/feature_engineer.joblib
+    healthcheck:
+      test: ["CMD", "python", "-c", "from src.serving import ModelPredictor"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  data:
+  ml_output:

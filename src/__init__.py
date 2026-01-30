@@ -2,67 +2,92 @@
 Credit Approval ML Pipeline - Source Package
 =============================================
 
-Enterprise-grade machine learning pipeline for credit approval prediction.
+MLOps-ready machine learning pipeline for credit approval prediction.
 
 Modules:
-    - config: Configuration classes and constants
-    - utils: Utility functions and logging
-    - data_loader: Data loading and validation
-    - features: Feature engineering pipeline
-    - models: Model factory and configurations
-    - train: Training and optimization
-    - evaluate: Evaluation and business analysis
+    core: Configuration, logging, exceptions
+    data: Data loading and validation
+    features: Feature engineering and preprocessing
+    models: Model factory and registry
+    training: Model training and optimization
+    evaluation: Model evaluation and metrics
+    pipelines: Training and inference pipelines
+    serving: Production model serving
 """
-
-from .config import ModelConfig, MLPipelineError, DataValidationError, ModelTrainingError, DeploymentError
-from .utils import MLPipelineLogger, DependencyManager, handle_errors, setup_output_directories, memory_cleanup
-from .data_loader import RobustDataLoader, TemporalDataSplitter
-from .features import SafeDataSplitter, RobustFeatureEngineer, DataPreprocessingPipeline, DataQualityAnalyzer
-from .models import ModelFactory
-from .train import HyperparameterOptimizer, ModelTrainer, ModelPersistence, TrainingVisualizer
-from .evaluate import (
-    StatisticalValidator, 
-    ModelEvaluator, 
-    BusinessImpactAnalyst, 
-    ModelSelector,
-    EvaluationVisualizer
-)
 
 __version__ = "3.0.0"
 __author__ = "Credit Approval Team"
 
+# Core
+from .core.config import PipelineConfig, get_config
+from .core.logger import setup_logger, get_logger
+from .core.exceptions import (
+    MLPipelineError,
+    DataValidationError,
+    ModelTrainingError,
+    FeatureEngineeringError
+)
+
+# Data
+from .data.loader import DataLoader
+from .data.validator import DataValidator
+
+# Features
+from .features.engineer import FeatureEngineer
+from .features.preprocessor import DataPreprocessor, TargetCreator, DataSplitter
+
+# Models
+from .models.factory import ModelFactory
+from .models.registry import ModelRegistry
+
+# Training
+from .training.trainer import ModelTrainer
+from .training.optimizer import HyperparameterOptimizer
+
+# Evaluation
+from .evaluation.evaluator import ModelEvaluator
+from .evaluation.metrics import MetricsCalculator, BusinessAnalyzer
+
+# Pipelines
+from .pipelines.training_pipeline import TrainingPipeline
+from .pipelines.inference_pipeline import InferencePipeline
+
+# Serving
+from .serving.predictor import ModelPredictor
+
 __all__ = [
-    # Config
-    "ModelConfig",
+    # Version
+    "__version__",
+    # Core
+    "PipelineConfig",
+    "get_config",
+    "setup_logger",
+    "get_logger",
     "MLPipelineError",
-    "DataValidationError", 
+    "DataValidationError",
     "ModelTrainingError",
-    "DeploymentError",
-    # Utils
-    "MLPipelineLogger",
-    "DependencyManager",
-    "handle_errors",
-    "setup_output_directories",
-    "memory_cleanup",
+    "FeatureEngineeringError",
     # Data
-    "RobustDataLoader",
-    "TemporalDataSplitter",
+    "DataLoader",
+    "DataValidator",
     # Features
-    "SafeDataSplitter",
-    "RobustFeatureEngineer",
-    "DataPreprocessingPipeline",
-    "DataQualityAnalyzer",
+    "FeatureEngineer",
+    "DataPreprocessor",
+    "TargetCreator",
+    "DataSplitter",
     # Models
     "ModelFactory",
-    # Train
-    "HyperparameterOptimizer",
+    "ModelRegistry",
+    # Training
     "ModelTrainer",
-    "ModelPersistence",
-    "TrainingVisualizer",
-    # Evaluate
-    "StatisticalValidator",
+    "HyperparameterOptimizer",
+    # Evaluation
     "ModelEvaluator",
-    "BusinessImpactAnalyst",
-    "ModelSelector",
-    "EvaluationVisualizer",
+    "MetricsCalculator",
+    "BusinessAnalyzer",
+    # Pipelines
+    "TrainingPipeline",
+    "InferencePipeline",
+    # Serving
+    "ModelPredictor",
 ]

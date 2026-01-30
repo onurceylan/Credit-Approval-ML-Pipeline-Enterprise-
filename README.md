@@ -1,403 +1,312 @@
-multimodal-credit-approval/
+# Credit Approval ML Pipeline
+
+> **MLOps-Ready Production Architecture** for Credit Card Approval Prediction
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## 🏗️ Architecture Overview
+
+This project implements **MLOps-Ready Production Architecture**, a design pattern optimized for enterprise ML systems. It separates concerns into distinct layers, enabling:
+
+- **Modularity**: Each component is independently testable and replaceable
+- **Scalability**: Easy to add new models, features, or data sources
+- **Maintainability**: Clear code organization with single responsibility
+- **Reproducibility**: YAML configs for experiment tracking
+- **Deployability**: Docker support for containerized deployment
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      ENTRY POINTS                                │
+│  ┌──────────┐  ┌──────────────┐  ┌──────────────┐               │
+│  │ main.py  │  │ scripts/     │  │ Docker       │               │
+│  └────┬─────┘  │ train.py     │  │ Container    │               │
+│       │        │ predict.py   │  └──────────────┘               │
+│       ▼        └──────────────┘                                  │
+├─────────────────────────────────────────────────────────────────┤
+│                      PIPELINE LAYER                              │
+│  ┌─────────────────────────┐  ┌─────────────────────────┐       │
+│  │  TrainingPipeline       │  │  InferencePipeline      │       │
+│  │  - Orchestrates train   │  │  - Batch predictions    │       │
+│  │  - Model selection      │  │  - Single predictions   │       │
+│  └─────────────────────────┘  └─────────────────────────┘       │
+├─────────────────────────────────────────────────────────────────┤
+│                      BUSINESS LOGIC LAYER                        │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐    │
+│  │ DataLoad │ │ Feature  │ │ Model    │ │ Model            │    │
+│  │ Validate │ │ Engineer │ │ Factory  │ │ Trainer          │    │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘    │
+├─────────────────────────────────────────────────────────────────┤
+│                      CORE LAYER                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
+│  │ ConfigLoader │  │ Logger       │  │ Custom Exceptions    │   │
+│  │ (YAML)       │  │ (File+Term)  │  │ (Hierarchy)          │   │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘   │
+├─────────────────────────────────────────────────────────────────┤
+│                      INFRASTRUCTURE                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐     │
+│  │ configs/ │  │ data/    │  │ docker/  │  │ tests/       │     │
+│  │ (YAML)   │  │ (CSV)    │  │ (Deploy) │  │ (pytest)     │     │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📁 Project Structure
+
+```
+credit-approval/
+├── configs/                    # YAML configuration files
+│   ├── base.yaml              # Project settings, data paths
+│   ├── training.yaml          # Model hyperparameters
+│   └── deployment.yaml        # Business params, thresholds
 │
-├── data/                     # Ham veya işlenmiş veri (opsiyonel)
-│   ├── raw/                  # Orijinal dataset (CSV, JSON, vb.)
-│   └── processed/            # Preprocessed dataset
+├── src/                        # Source code package
+│   ├── __init__.py            # Package exports
+│   ├── core/                  # Core utilities
+│   │   ├── config.py          # YAML config loader
+│   │   ├── logger.py          # Logging system
+│   │   └── exceptions.py      # Custom exceptions
+│   │
+│   ├── data/                  # Data layer
+│   │   ├── loader.py          # Multi-env data loading
+│   │   └── validator.py       # Data validation
+│   │
+│   ├── features/              # Feature engineering
+│   │   ├── engineer.py        # Feature creation
+│   │   └── preprocessor.py    # Preprocessing pipeline
+│   │
+│   ├── models/                # Model layer
+│   │   ├── factory.py         # Model factory (GPU/CPU)
+│   │   └── registry.py        # Model versioning
+│   │
+│   ├── training/              # Training layer
+│   │   ├── trainer.py         # Model training
+│   │   └── optimizer.py       # Optuna integration
+│   │
+│   ├── evaluation/            # Evaluation layer
+│   │   ├── evaluator.py       # Model evaluation
+│   │   └── metrics.py         # Business metrics
+│   │
+│   ├── pipelines/             # Pipeline orchestration
+│   │   ├── base.py            # Abstract pipeline
+│   │   ├── training_pipeline.py
+│   │   └── inference_pipeline.py
+│   │
+│   └── serving/               # Production serving
+│       └── predictor.py       # API-ready predictor
 │
-├── notebooks/                # Deneme amaçlı Jupyter Notebook'lar
-│   └── exploration.ipynb
+├── tests/                      # Unit tests
+│   ├── test_data.py
+│   ├── test_features.py
+│   └── test_models.py
 │
-├── src/                      # Asıl proje kodları
-│   ├── __init__.py
-│   │
-│   ├── config.py             # Genel ayarlar (ör. hyperparametreler, yol bilgileri)
-│   │
-│   ├── data_loader.py        # Veri yükleme fonksiyonları
-│   │   ├── load_from_csv()
-│   │   ├── load_from_bigquery()
-│   │   └── preprocess_data()
-│   │
-│   ├── features.py           # Feature engineering işlemleri
-│   │   ├── encode_categoricals()
-│   │   ├── scale_features()
-│   │   └── create_new_features()
-│   │
-│   ├── models.py             # Modellerin tanımları
-│   │   ├── get_logistic_regression()
-│   │   ├── get_xgboost()
-│   │   └── get_neural_net()
-│   │
-│   ├── train.py              # Eğitim pipeline'ı
-│   │   └── train_model(model, X_train, y_train)
-│   │
-│   ├── evaluate.py           # Performans metrikleri
-│   │   ├── classification_report_custom()
-│   │   ├── plot_confusion_matrix()
-│   │   └── save_results()
-│   │
-│   └── utils.py              # Yardımcı fonksiyonlar (loglama, seed ayarı vb.)
+├── docker/                     # Containerization
+│   ├── Dockerfile             # Multi-stage build
+│   └── docker-compose.yml     # Service definitions
 │
-├── main.py                   # Pipeline başlangıç noktası
-│                             # Örn: veri yükle → preprocess → model eğit → evaluate
+├── scripts/                    # CLI scripts
+│   ├── train.py               # Training CLI
+│   └── predict.py             # Prediction CLI
 │
-├── requirements.txt          # Bağımlılıklar (pandas, scikit-learn, xgboost, torch, vb.)
-├── README.md                 # Proje açıklaması
-└── .gitignore
-
-
-
-
-
-# 📊 Credit Approval ML Pipeline
-
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-
-## 🎯 Overview
-
-Machine learning pipeline for credit approval prediction featuring statistical validation, comprehensive business impact analysis, and production deployment readiness. This system provides end-to-end ML workflow from data ingestion to stakeholder reporting.
-
----
-
-## 🌟 Key Features
-
-- 🤖 **Multi-Algorithm Training**: XGBoost, LightGBM, CatBoost, RandomForest, GradientBoosting, LogisticRegression
-- 📊 **Statistical Validation**: Friedman test with Bonferroni-corrected post-hoc analysis
-- 💼 **Business Impact Analysis**: ROI calculation, risk assessment, implementation roadmap
-- 🚀 **Production Ready**: Deployment artifacts, model serving API, monitoring recommendations
-- 📋 **Stakeholder Reports**: Executive summaries, technical guides, business case documentation
-- 🛡️ **Data Leakage Prevention**: Temporal splitting and comprehensive validation
-- ⚡ **GPU Acceleration**: CUDA support for XGBoost, LightGBM, and CatBoost
-- 🔍 **Model Interpretability**: Feature importance, SHAP integration recommendations
-- 📈 **Comprehensive Visualization**: 20+ business and technical dashboards
-
----
-
-## 🏗️ Architecture
-
-```
-Credit Approval ML Pipeline
-├── 📁 Data Layer
-│   ├── Robust data loading with validation
-│   ├── Temporal splitting (prevents data leakage)
-│   └── Comprehensive quality checks
-├── 🔧 Feature Engineering
-│   ├── Safe preprocessing pipeline
-│   ├── Advanced feature creation
-│   └── Categorical encoding with validation
-├── 🤖 Model Training
-│   ├── Multi-algorithm support
-│   ├── Optuna hyperparameter optimization
-│   └── Cross-validation with stratification
-├── 📊 Statistical Analysis
-│   ├── Friedman test for model comparison
-│   ├── Post-hoc pairwise testing
-│   └── Effect size calculations
-├── 🎯 Model Selection
-│   ├── Multi-criteria decision making
-│   ├── Performance vs business trade-offs
-│   └── Deployment readiness assessment
-├── 💼 Business Analysis
-│   ├── ROI and NPV calculations
-│   ├── Risk assessment and mitigation
-│   └── Strategic impact analysis
-└── 🚀 Deployment
-    ├── Model serving API
-    ├── Monitoring recommendations
-    └── Stakeholder documentation
+├── data/
+│   ├── raw/                   # Original CSV files
+│   └── processed/             # Transformed data
+│
+├── ml_pipeline_output/         # Pipeline outputs
+│   ├── models/                # Trained models (.joblib)
+│   ├── plots/                 # Visualizations
+│   ├── results/               # Reports (JSON, CSV)
+│   ├── logs/                  # Execution logs
+│   └── final_model/           # Deployment artifacts
+│
+├── main.py                     # Main entry point
+├── setup.py                    # Package installation
+├── requirements.txt            # Dependencies
+└── README.md                   # This file
 ```
 
 ---
 
-## 📂 Output Structure
+## 🚀 Quick Start
 
-```
-ml_pipeline_output/
-├── 📁 models/                    # Trained models and preprocessors
-│   ├── XGBoost_model.joblib
-│   ├── LightGBM_model.joblib
-│   ├── feature_engineer.joblib
-│   └── ...
-├── 📁 plots/                     # Visualizations and dashboards
-│   ├── training_results.png
-│   ├── model_evaluation_comparison.png
-│   ├── business_impact_analysis.png
-│   └── model_selection_final.png
-├── 📁 results/                   # Analysis reports and metrics
-│   ├── data_validation_report.json
-│   ├── training_summary.json
-│   ├── evaluation_report.json
-│   ├── executive_summary_report.txt
-│   ├── business_case_document.txt
-│   └── implementation_guide.txt
-├── 📁 logs/                      # Execution logs
-│   └── ml_pipeline_YYYYMMDD_HHMMSS.log
-└── 📁 final_model/              # Deployment-ready artifacts
-    ├── [ModelName]_final.joblib
-    ├── preprocessor_final.joblib
-    └── model_metadata.json
-```
-
----
-
-## 🔬 Statistical Validation
-
-### Friedman Test Implementation
-
-The pipeline implements rigorous statistical testing to compare model performance:
-
-```python
-# Friedman test for comparing multiple models across CV folds
-statistic, p_value = friedmanchisquare(*cv_matrix)
-
-# Post-hoc pairwise comparisons with Bonferroni correction
-alpha_corrected = 0.05 / (n_models * (n_models - 1) / 2)
-```
-
-### Key Features
-
-- **Non-parametric testing**: No assumptions about data distribution
-- **Multiple comparison correction**: Bonferroni adjustment for family-wise error rate
-- **Effect size calculation**: Practical significance assessment
-- **Confidence intervals**: Statistical uncertainty quantification
-
-### Statistical Output Example
-
-```
-📊 Friedman Test Results:
-   • Chi-square statistic: 15.234567
-   • p-value: 0.001234
-   • Significant: Yes (α = 0.05)
-
-🔍 Post-hoc pairwise comparisons:
-   • Bonferroni-corrected α: 0.003333
-   • XGBoost vs RandomForest: p=0.000123 *** (XGBoost better)
-   • XGBoost vs LogisticRegression: p=0.000456 *** (XGBoost better)
-   • 3 significant pairwise differences found
-```
-
----
-
-## 💼 Business Impact Analysis
-
-### Financial Metrics
-
-- **ROI Calculation**: Net present value with 10% discount rate
-- **Payback Period**: Time to recover initial investment
-- **Sensitivity Analysis**: Optimistic/realistic/pessimistic scenarios
-- **Cost-Benefit Analysis**: Comprehensive cost modeling
-
-### Business Case Components
-
-- **Executive Summary**: C-level decision support
-- **Financial Analysis**: ROI, NPV, payback calculations
-- **Risk Assessment**: Financial, operational, regulatory risks
-- **Implementation Roadmap**: 4-phase deployment plan
-- **Success Metrics**: KPIs and monitoring framework
-
-### Sample Business Output
-
-```
-💰 Financial Impact:
-   • Annual Net Benefit: $1,234,567
-   • ROI: 15.2%
-   • Payback Period: Year 1
-   • 5-Year NPV: $4,567,890
-
-📊 Operational Efficiency:
-   • Decision Speed: 3.2h → 0.1h (97% improvement)
-   • Automated Decisions: 75% of applications
-   • Processing Cost: 60-70% reduction
-```
-
----
-
-## 📊 Pipeline Stages
-
-### Cell 1: Environment Setup & Configuration
-
-Professional environment setup with dependency management, logging configuration, and GPU detection.
-
-- Comprehensive dependency checking
-- Professional logging system
-- GPU acceleration detection
-- Configuration validation
-
-### Cell 2: Data Loading & Validation
-
-Robust data loading with comprehensive validation, quality checks, and temporal integrity verification.
-
-- Multi-path data loading with fallbacks
-- Comprehensive data quality validation
-- Temporal data splitting for leakage prevention
-- Detailed validation reporting
-
-### Cell 3: Data Preprocessing & Feature Engineering
-
-Safe preprocessing pipeline with advanced feature engineering, proper fit-transform patterns, and leakage prevention.
-
-- Safe train/validation/test splitting
-- Advanced feature engineering (age groups, income ratios, employment categories)
-- Categorical encoding with unseen category handling
-- Outlier detection and treatment
-
-### Cell 4: Model Training & Hyperparameter Optimization
-
-Multi-algorithm training with Optuna optimization, GPU acceleration, and comprehensive evaluation.
-
-- 6 different algorithms with GPU support
-- Optuna hyperparameter optimization
-- Cross-validation with stratification
-- Performance tracking and comparison
-
-### Cell 5: Model Evaluation & Statistical Comparison
-
-Comprehensive model evaluation with statistical validation, Friedman tests, and business impact assessment.
-
-- Statistical significance testing (Friedman + post-hoc)
-- Business impact analysis
-- Comprehensive visualizations
-- Detailed comparison reports
-
-### Cell 6: Model Selection & Final Validation
-
-Multi-criteria model selection with deployment readiness assessment and interpretability analysis.
-
-- Multi-criteria decision making
-- Deployment readiness assessment
-- Model interpretability analysis
-- Final validation and recommendations
-
-### Cell 7: Business Impact Analysis & Insights
-
-Enterprise-grade business analysis with ROI calculations, stakeholder reports, and implementation roadmaps.
-
-- Comprehensive financial analysis (ROI, NPV, payback)
-- Risk assessment and mitigation strategies
-- Stakeholder-specific reports
-- Implementation roadmap and success metrics
-
----
-
-## 👥 Target Audience
-
-| Audience | Use Case |
-|----------|----------|
-| 🏦 **Banking & FinTech** | Optimize credit approval workflows |
-| 📊 **Risk & Compliance** | Reduce default risk via robust ML validation |
-| 💼 **Executives** | Business impact reports with ROI & roadmap |
-| 👩‍💻 **Data Scientists** | End-to-end ML pipeline ready for deployment |
-
----
-
-## 🔧 Advanced Usage
-
-### Custom Model Integration
-
-```python
-# Add custom model to ModelFactory
-class CustomModelFactory(ModelFactory):
-    """
-    Extended model factory with custom model support.
-    
-    Supports adding proprietary or specialized models
-    to the comparison framework.
-    """
-    
-    def _get_available_models(self) -> Dict[str, Dict]:
-        """
-        Get available model configurations including custom models.
-        
-        Returns:
-            Dict[str, Dict]: Model configurations with parameters and search spaces
-        """
-        models = super()._get_available_models()
-        
-        # Add custom model
-        models['CustomModel'] = {
-            'class': YourCustomModel,
-            'params': {'param1': 'value1'},
-            'param_space': {'param1': (0.1, 1.0)},
-            'type': 'custom'
-        }
-        
-        return models
-```
-
-### Custom Business Metrics
-
-```python
-# Extend BusinessImpactAnalyst
-class CustomBusinessAnalyst(BusinessImpactAnalyst):
-    """
-    Extended business analyst with industry-specific metrics.
-    
-    Adds domain-specific business calculations and
-    industry-standard risk assessments.
-    """
-    
-    def _calculate_industry_specific_metrics(self, model_result: Dict) -> Dict:
-        """
-        Calculate industry-specific business metrics.
-        
-        Args:
-            model_result (Dict): Model evaluation results
-            
-        Returns:
-            Dict: Industry-specific metrics and insights
-        """
-        # Your custom business logic here
-        return custom_metrics
-```
-
----
-
-## ⚡ Performance
-
-| Operation | Time |
-|-----------|------|
-| Friedman Test | <1 second for 6 models × 5 folds |
-| Post-hoc Tests | <2 seconds for all pairwise comparisons |
-| Visualization Generation | ~30-60 seconds for all plots |
-
----
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-#### GPU Not Detected
+### 1. Installation
 
 ```bash
-# Check CUDA installation
-nvidia-smi
+# Clone repository
+git clone https://github.com/example/credit-approval.git
+cd credit-approval
 
-# Install GPU versions
-pip install xgboost[gpu] lightgbm[gpu] catboost[gpu]
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Set GPU configuration
-CONFIG.use_gpu = True
-CONFIG.gpu_device_id = 0
+# Install dependencies
+pip install -r requirements.txt
+
+# Or install as package
+pip install -e .
 ```
+
+### 2. Run Training Pipeline
+
+```bash
+# Basic training
+python main.py
+
+# With custom parameters
+python main.py --trials 100 --cv-folds 10 --no-gpu
+
+# Using CLI script
+python scripts/train.py --trials 50
+```
+
+### 3. Make Predictions
+
+```bash
+# Single prediction
+python scripts/predict.py --single '{"DAYS_BIRTH": -10000, "AMT_INCOME_TOTAL": 100000}'
+
+# Batch prediction
+python scripts/predict.py --input customers.csv --output predictions.csv
+```
+
+---
+
+## 🌐 Environment Support
+
+### Google Colab
+
+```python
+# 1. Upload project to Google Drive
+
+# 2. In Colab notebook:
+from google.colab import drive
+drive.mount('/content/drive')
+
+%cd /content/drive/MyDrive/credit-approval
+
+!pip install -r requirements.txt
+
+!python main.py
+```
+
+### Kaggle
+
+```python
+# Data is auto-detected from /kaggle/input/
+!pip install -r requirements.txt
+!python main.py
+```
+
+### Docker
+
+```bash
+# Build and run training
+docker-compose -f docker/docker-compose.yml up training
+
+# Run inference service
+docker-compose -f docker/docker-compose.yml up inference
+```
+
+---
+
+## 🔧 Configuration
+
+All settings are in YAML files under `configs/`:
+
+### base.yaml
+```yaml
+project:
+  name: "credit-approval-ml"
+  version: "3.0.0"
+
+model:
+  random_state: 42
+  cv_folds: 5
+  test_size: 0.1
+```
+
+### Environment Variables
+
+Override configs with environment variables:
+```bash
+export ML_OPTUNA_TRIALS=100
+export ML_GPU_ENABLED=false
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# With coverage
+pytest tests/ --cov=src --cov-report=html
+```
+
+---
+
+## 📊 Supported Models
+
+| Model | GPU Support | Auto-Optimization |
+|-------|-------------|-------------------|
+| XGBoost | ✅ | ✅ |
+| LightGBM | ✅ | ✅ |
+| CatBoost | ✅ | ✅ |
+| RandomForest | ❌ | ✅ |
+| GradientBoosting | ❌ | ✅ |
+| LogisticRegression | ❌ | ✅ |
+
+---
+
+## 🏛️ Design Patterns Used
+
+1. **Factory Pattern**: `ModelFactory` creates models with consistent interface
+2. **Pipeline Pattern**: `TrainingPipeline` / `InferencePipeline` orchestrate workflows
+3. **Registry Pattern**: `ModelRegistry` manages model versioning
+4. **Strategy Pattern**: Different preprocessing strategies per data type
+5. **Dependency Injection**: Components receive config/logger via constructor
+
+---
+
+## 📈 Pipeline Flow
+
+```
+1. Data Loading     → Load CSV files, detect environment
+2. Data Validation  → Check columns, types, quality
+3. Target Creation  → Temporal split to prevent leakage
+4. Data Splitting   → Stratified train/val/test splits
+5. Feature Engineering → Create derived features
+6. Hyperparameter Optimization → Optuna-based tuning
+7. Model Training   → Train all available models
+8. Evaluation       → Test set metrics, cross-validation
+9. Model Selection  → Composite scoring, best model
+10. Business Analysis → Cost-benefit, ROI calculation
+11. Deployment Prep  → Save final model and artifacts
+```
+
+---
+
+## 📦 Outputs
+
+After running the pipeline, find outputs in `ml_pipeline_output/`:
+
+- `models/` - All trained models with registry
+- `plots/` - Confusion matrices, ROC curves, feature importance
+- `results/` - Evaluation reports, business case document
+- `logs/` - Detailed execution logs
+- `final_model/` - Deployment-ready model and feature engineer
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
----
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
-
----
-
-**Made with ❤️ for better credit decisions**
+MIT License - see LICENSE file for details.

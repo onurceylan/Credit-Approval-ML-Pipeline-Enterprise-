@@ -1,0 +1,49 @@
+# Credit Approval ML Pipeline - Base Configuration
+# ================================================
+
+project:
+  name: "credit-approval-ml"
+  version: "3.0.0"
+  description: "Enterprise ML pipeline for credit approval prediction"
+
+# Data Configuration
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  files:
+    application: "application_record.csv"
+    credit: "credit_record.csv"
+
+# Model Configuration
+model:
+  random_state: 42
+  cv_folds: 5
+  test_size: 0.1
+  val_size: 0.2
+  n_jobs: -1
+
+# Training Configuration
+training:
+  optuna_trials: 50
+  optuna_timeout: 1800  # 30 minutes
+  early_stopping_rounds: 50
+
+# GPU Configuration
+gpu:
+  enabled: true
+  device_id: 0
+
+# Output Configuration  
+output:
+  base_dir: "ml_pipeline_output"
+  models_dir: "models"
+  plots_dir: "plots"
+  results_dir: "results"
+  logs_dir: "logs"
+  final_model_dir: "final_model"
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+  file_enabled: true
