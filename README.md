@@ -1,6 +1,6 @@
 # Credit Approval ML Pipeline
 
-> **MLOps-Ready Production Architecture** for Credit Card Approval Prediction
+> **Clean Architecture + MLOps-Ready Production Architecture**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,48 +9,38 @@
 
 ## 🏗️ Architecture Overview
 
-This project implements **MLOps-Ready Production Architecture**, a design pattern optimized for enterprise ML systems. It separates concerns into distinct layers, enabling:
+This project implements **Clean Architecture** combined with **MLOps-Ready Production Architecture** principles:
 
-- **Modularity**: Each component is independently testable and replaceable
-- **Scalability**: Easy to add new models, features, or data sources
-- **Maintainability**: Clear code organization with single responsibility
-- **Reproducibility**: YAML configs for experiment tracking
-- **Deployability**: Docker support for containerized deployment
-
-### Architecture Diagram
+- **Clean Architecture**: Separation of concerns across layers (Entities → Use Cases → Adapters → Frameworks)
+- **MLOps-Ready**: Reproducibility, configuration management, pipeline separation, model registry, containerization
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                      ENTRY POINTS                                │
 │  ┌──────────┐  ┌──────────────┐  ┌──────────────┐               │
-│  │ main.py  │  │ scripts/     │  │ Docker       │               │
-│  └────┬─────┘  │ train.py     │  │ Container    │               │
-│       │        │ predict.py   │  └──────────────┘               │
-│       ▼        └──────────────┘                                  │
+│  │ main.py  │  │ scripts/     │  │ docker/      │               │
+│  └────┬─────┘  └──────────────┘  └──────────────┘               │
+│       ▼                                                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                      PIPELINE LAYER                              │
 │  ┌─────────────────────────┐  ┌─────────────────────────┐       │
 │  │  TrainingPipeline       │  │  InferencePipeline      │       │
-│  │  - Orchestrates train   │  │  - Batch predictions    │       │
-│  │  - Model selection      │  │  - Single predictions   │       │
 │  └─────────────────────────┘  └─────────────────────────┘       │
 ├─────────────────────────────────────────────────────────────────┤
 │                      BUSINESS LOGIC LAYER                        │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐    │
-│  │ DataLoad │ │ Feature  │ │ Model    │ │ Model            │    │
-│  │ Validate │ │ Engineer │ │ Factory  │ │ Trainer          │    │
+│  │ Data     │ │ Features │ │ Models   │ │ Training         │    │
+│  │ Loader   │ │ Engineer │ │ Factory  │ │ Evaluation       │    │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘    │
 ├─────────────────────────────────────────────────────────────────┤
 │                      CORE LAYER                                  │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
-│  │ ConfigLoader │  │ Logger       │  │ Custom Exceptions    │   │
-│  │ (YAML)       │  │ (File+Term)  │  │ (Hierarchy)          │   │
+│  │ ConfigLoader │  │ Logger       │  │ Exceptions           │   │
 │  └──────────────┘  └──────────────┘  └──────────────────────┘   │
 ├─────────────────────────────────────────────────────────────────┤
 │                      INFRASTRUCTURE                              │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐     │
 │  │ configs/ │  │ data/    │  │ docker/  │  │ tests/       │     │
-│  │ (YAML)   │  │ (CSV)    │  │ (Deploy) │  │ (pytest)     │     │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────────┘     │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -61,84 +51,98 @@ This project implements **MLOps-Ready Production Architecture**, a design patter
 
 ```
 credit-approval/
-├── configs/                    # YAML configuration files
-│   ├── base.yaml              # Project settings, data paths
-│   ├── training.yaml          # Model hyperparameters
-│   └── deployment.yaml        # Business params, thresholds
 │
-├── src/                        # Source code package
-│   ├── __init__.py            # Package exports
-│   ├── core/                  # Core utilities
-│   │   ├── config.py          # YAML config loader
-│   │   ├── logger.py          # Logging system
-│   │   └── exceptions.py      # Custom exceptions
-│   │
-│   ├── data/                  # Data layer
-│   │   ├── loader.py          # Multi-env data loading
-│   │   └── validator.py       # Data validation
-│   │
-│   ├── features/              # Feature engineering
-│   │   ├── engineer.py        # Feature creation
-│   │   └── preprocessor.py    # Preprocessing pipeline
-│   │
-│   ├── models/                # Model layer
-│   │   ├── factory.py         # Model factory (GPU/CPU)
-│   │   └── registry.py        # Model versioning
-│   │
-│   ├── training/              # Training layer
-│   │   ├── trainer.py         # Model training
-│   │   └── optimizer.py       # Optuna integration
-│   │
-│   ├── evaluation/            # Evaluation layer
-│   │   ├── evaluator.py       # Model evaluation
-│   │   └── metrics.py         # Business metrics
-│   │
-│   ├── pipelines/             # Pipeline orchestration
-│   │   ├── base.py            # Abstract pipeline
-│   │   ├── training_pipeline.py
-│   │   └── inference_pipeline.py
-│   │
-│   └── serving/               # Production serving
-│       └── predictor.py       # API-ready predictor
+├── configs/                        # 📋 YAML Configuration Files
+│   ├── base.yaml                   #    Project settings, paths, random state
+│   ├── training.yaml               #    Model hyperparameters, Optuna settings
+│   └── deployment.yaml             #    Business costs, deployment thresholds
 │
-├── tests/                      # Unit tests
-│   ├── test_data.py
-│   ├── test_features.py
-│   └── test_models.py
+├── src/                            # 📦 Source Code Package
+│   ├── __init__.py                 #    Package exports
+│   │
+│   ├── core/                       # 🔧 Core Utilities
+│   │   ├── __init__.py
+│   │   ├── config.py               #    YAML ConfigLoader + PipelineConfig dataclass
+│   │   ├── logger.py               #    Colored logging with file output
+│   │   └── exceptions.py           #    Custom exception hierarchy
+│   │
+│   ├── data/                       # 📥 Data Layer
+│   │   ├── __init__.py
+│   │   ├── loader.py               #    Multi-environment data loading
+│   │   └── validator.py            #    Data validation and quality checks
+│   │
+│   ├── features/                   # 🔬 Feature Engineering
+│   │   ├── __init__.py
+│   │   ├── engineer.py             #    FeatureEngineer (fit-transform pattern)
+│   │   └── preprocessor.py         #    TargetCreator, DataSplitter, Preprocessor
+│   │
+│   ├── models/                     # 🤖 Model Layer
+│   │   ├── __init__.py
+│   │   ├── factory.py              #    ModelFactory (GPU/CPU auto-detection)
+│   │   └── registry.py             #    ModelRegistry (versioning, metadata)
+│   │
+│   ├── training/                   # 🏋️ Training Layer
+│   │   ├── __init__.py
+│   │   ├── trainer.py              #    ModelTrainer with CV and metrics
+│   │   └── optimizer.py            #    Optuna HyperparameterOptimizer
+│   │
+│   ├── evaluation/                 # 📊 Evaluation Layer
+│   │   ├── __init__.py
+│   │   ├── evaluator.py            #    ModelEvaluator, model selection
+│   │   └── metrics.py              #    MetricsCalculator, BusinessAnalyzer
+│   │
+│   ├── pipelines/                  # 🔄 Pipeline Orchestration
+│   │   ├── __init__.py
+│   │   ├── base.py                 #    BasePipeline abstract class
+│   │   ├── training_pipeline.py    #    Complete training workflow
+│   │   └── inference_pipeline.py   #    Batch/single prediction workflow
+│   │
+│   └── serving/                    # 🚀 Production Serving
+│       ├── __init__.py
+│       └── predictor.py            #    ModelPredictor (API-ready)
 │
-├── docker/                     # Containerization
-│   ├── Dockerfile             # Multi-stage build
-│   └── docker-compose.yml     # Service definitions
+├── tests/                          # 🧪 Unit Tests (pytest)
+│   ├── __init__.py
+│   ├── test_data.py                #    Data module tests
+│   ├── test_features.py            #    Feature engineering tests
+│   └── test_models.py              #    Model factory/registry tests
 │
-├── scripts/                    # CLI scripts
-│   ├── train.py               # Training CLI
-│   └── predict.py             # Prediction CLI
+├── docker/                         # 🐳 Containerization
+│   ├── Dockerfile                  #    Multi-stage build (dev/prod/inference)
+│   └── docker-compose.yml          #    Service definitions
 │
-├── data/
-│   ├── raw/                   # Original CSV files
-│   └── processed/             # Transformed data
+├── scripts/                        # 💻 CLI Tools
+│   ├── train.py                    #    Training CLI with arguments
+│   └── predict.py                  #    Prediction CLI (batch/single)
 │
-├── ml_pipeline_output/         # Pipeline outputs
-│   ├── models/                # Trained models (.joblib)
-│   ├── plots/                 # Visualizations
-│   ├── results/               # Reports (JSON, CSV)
-│   ├── logs/                  # Execution logs
-│   └── final_model/           # Deployment artifacts
+├── data/                           # 📂 Data Directory
+│   ├── raw/                        #    Original CSV files
+│   │   ├── application_record.csv  #    (54 MB)
+│   │   └── credit_record.csv       #    (15 MB)
+│   └── processed/                  #    Transformed data (gitignored)
 │
-├── main.py                     # Main entry point
-├── setup.py                    # Package installation
-├── requirements.txt            # Dependencies
-└── README.md                   # This file
+├── ml_pipeline_output/             # 📤 Pipeline Outputs (gitignored)
+│   ├── models/                     #    Trained models (.joblib)
+│   ├── plots/                      #    Visualizations (.png)
+│   ├── results/                    #    Reports (JSON, CSV, TXT)
+│   ├── logs/                       #    Execution logs
+│   └── final_model/                #    Deployment artifacts
+│
+├── main.py                         # 🚀 Main Entry Point
+├── setup.py                        # 📦 Package Installation
+├── requirements.txt                # 📋 Dependencies
+├── .gitignore                      # 🚫 Git Ignore Rules
+└── README.md                       # 📖 This File
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Installation
+### Installation
 
 ```bash
-# Clone repository
+# Clone and setup
 git clone https://github.com/example/credit-approval.git
 cd credit-approval
 
@@ -153,7 +157,7 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### 2. Run Training Pipeline
+### Run Training
 
 ```bash
 # Basic training
@@ -163,10 +167,10 @@ python main.py
 python main.py --trials 100 --cv-folds 10 --no-gpu
 
 # Using CLI script
-python scripts/train.py --trials 50
+python scripts/train.py --trials 50 --no-optimize
 ```
 
-### 3. Make Predictions
+### Make Predictions
 
 ```bash
 # Single prediction
@@ -180,26 +184,19 @@ python scripts/predict.py --input customers.csv --output predictions.csv
 
 ## 🌐 Environment Support
 
+| Environment | Status | Data Location |
+|-------------|--------|---------------|
+| **Local** | ✅ | `data/raw/` |
+| **Google Colab** | ✅ | `/content/drive/MyDrive/...` |
+| **Kaggle** | ✅ | `/kaggle/input/...` |
+| **Docker** | ✅ | Mounted volumes |
+
 ### Google Colab
 
 ```python
-# 1. Upload project to Google Drive
-
-# 2. In Colab notebook:
 from google.colab import drive
 drive.mount('/content/drive')
-
 %cd /content/drive/MyDrive/credit-approval
-
-!pip install -r requirements.txt
-
-!python main.py
-```
-
-### Kaggle
-
-```python
-# Data is auto-detected from /kaggle/input/
 !pip install -r requirements.txt
 !python main.py
 ```
@@ -207,10 +204,10 @@ drive.mount('/content/drive')
 ### Docker
 
 ```bash
-# Build and run training
+# Run training
 docker-compose -f docker/docker-compose.yml up training
 
-# Run inference service
+# Run inference
 docker-compose -f docker/docker-compose.yml up inference
 ```
 
@@ -218,27 +215,34 @@ docker-compose -f docker/docker-compose.yml up inference
 
 ## 🔧 Configuration
 
-All settings are in YAML files under `configs/`:
+All settings are externalized in YAML files under `configs/`:
 
-### base.yaml
-```yaml
-project:
-  name: "credit-approval-ml"
-  version: "3.0.0"
+| File | Purpose |
+|------|---------|
+| `base.yaml` | Project name, version, data paths, random state |
+| `training.yaml` | Model hyperparameters, Optuna settings, CV folds |
+| `deployment.yaml` | Business costs, deployment thresholds |
 
-model:
-  random_state: 42
-  cv_folds: 5
-  test_size: 0.1
-```
+### Environment Variable Overrides
 
-### Environment Variables
-
-Override configs with environment variables:
 ```bash
 export ML_OPTUNA_TRIALS=100
 export ML_GPU_ENABLED=false
+export ML_RANDOM_STATE=123
 ```
+
+---
+
+## 📊 Supported Models
+
+| Model | GPU Support | Optuna Tuning |
+|-------|:-----------:|:-------------:|
+| XGBoost | ✅ | ✅ |
+| LightGBM | ✅ | ✅ |
+| CatBoost | ✅ | ✅ |
+| RandomForest | ❌ | ✅ |
+| GradientBoosting | ❌ | ✅ |
+| LogisticRegression | ❌ | ✅ |
 
 ---
 
@@ -254,56 +258,33 @@ pytest tests/ --cov=src --cov-report=html
 
 ---
 
-## 📊 Supported Models
+## 🏛️ Design Patterns
 
-| Model | GPU Support | Auto-Optimization |
-|-------|-------------|-------------------|
-| XGBoost | ✅ | ✅ |
-| LightGBM | ✅ | ✅ |
-| CatBoost | ✅ | ✅ |
-| RandomForest | ❌ | ✅ |
-| GradientBoosting | ❌ | ✅ |
-| LogisticRegression | ❌ | ✅ |
-
----
-
-## 🏛️ Design Patterns Used
-
-1. **Factory Pattern**: `ModelFactory` creates models with consistent interface
-2. **Pipeline Pattern**: `TrainingPipeline` / `InferencePipeline` orchestrate workflows
-3. **Registry Pattern**: `ModelRegistry` manages model versioning
-4. **Strategy Pattern**: Different preprocessing strategies per data type
-5. **Dependency Injection**: Components receive config/logger via constructor
+| Pattern | Implementation | Purpose |
+|---------|----------------|---------|
+| **Factory** | `ModelFactory` | Create models with consistent interface |
+| **Pipeline** | `TrainingPipeline`, `InferencePipeline` | Orchestrate workflows |
+| **Registry** | `ModelRegistry` | Version and track models |
+| **Strategy** | Feature preprocessing strategies | Flexible data transformations |
+| **Dependency Injection** | Constructor-based config/logger | Testability |
 
 ---
 
 ## 📈 Pipeline Flow
 
 ```
-1. Data Loading     → Load CSV files, detect environment
-2. Data Validation  → Check columns, types, quality
-3. Target Creation  → Temporal split to prevent leakage
-4. Data Splitting   → Stratified train/val/test splits
-5. Feature Engineering → Create derived features
-6. Hyperparameter Optimization → Optuna-based tuning
-7. Model Training   → Train all available models
-8. Evaluation       → Test set metrics, cross-validation
-9. Model Selection  → Composite scoring, best model
-10. Business Analysis → Cost-benefit, ROI calculation
-11. Deployment Prep  → Save final model and artifacts
+ 1. Load Data          → Multi-env data loading
+ 2. Validate Data      → Quality checks, ID overlap
+ 3. Create Target      → Temporal split (no leakage)
+ 4. Split Data         → Stratified train/val/test
+ 5. Engineer Features  → Derived features, scaling
+ 6. Optimize Params    → Optuna hyperparameter tuning
+ 7. Train Models       → All available models
+ 8. Evaluate           → Test metrics, cross-validation
+ 9. Select Best        → Composite scoring
+10. Business Analysis  → Cost-benefit, ROI
+11. Save Artifacts     → Models, reports, plots
 ```
-
----
-
-## 📦 Outputs
-
-After running the pipeline, find outputs in `ml_pipeline_output/`:
-
-- `models/` - All trained models with registry
-- `plots/` - Confusion matrices, ROC curves, feature importance
-- `results/` - Evaluation reports, business case document
-- `logs/` - Detailed execution logs
-- `final_model/` - Deployment-ready model and feature engineer
 
 ---
 
