@@ -1,0 +1,105 @@
+# Credit Approval ML Pipeline - Git Ignore
+
+# ===========================================
+# Python
+# ===========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ===========================================
+# Virtual Environments
+# ===========================================
+env/
+venv/
+ENV/
+.venv/
+
+# ===========================================
+# Jupyter Notebooks
+# ===========================================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ===========================================
+# IDE / Editors
+# ===========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.spyderproject
+.spyproject
+
+# ===========================================
+# Data Files (büyük dosyalar - Git'e ekleme)
+# ===========================================
+data/raw/*.csv
+data/raw/*.json
+data/processed/*.csv
+data/processed/*.parquet
+*.csv
+!requirements.txt
+
+# ===========================================
+# ML Pipeline Output (çıktılar - Git'e ekleme)
+# ===========================================
+ml_pipeline_output/
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.model
+
+# ===========================================
+# Logs
+# ===========================================
+*.log
+logs/
+
+# ===========================================
+# OS Generated
+# ===========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ===========================================
+# Secrets & Configs
+# ===========================================
+.env
+.env.local
+*.pem
+*.key
+secrets.yaml
+config.local.yaml
+
+# ===========================================
+# Kaggle / Colab Specific
+# ===========================================
+/kaggle/
+.kaggle/
+*.kaggle
