@@ -118,7 +118,7 @@ credit-approval/
 │   └── final_model/
 │
 ├── main.ipynb                      # 🚀 Main Entry Point
-├── setup.py                        # 📦 Package Installation
+├── setup.ipynb                     # 📦 Package Installation
 ├── requirements.txt                # 📋 Dependencies
 └── README.md                       # 📖 This File
 ```
