@@ -182,6 +182,29 @@ python scripts/predict.py --input customers.csv --output predictions.csv
 
 ---
 
+## 📓 Jupyter Notebook (Colab)
+
+**Google Colab kullanıcıları için tek dosyalı notebook:**
+
+```
+notebooks/credit_approval_pipeline.ipynb
+```
+
+Bu notebook tüm pipeline'ı içerir:
+- ✅ Environment setup (Colab/Kaggle/Local otomatik algılama)
+- ✅ Data loading & validation
+- ✅ Feature engineering
+- ✅ Model training (XGBoost, LightGBM, CatBoost, sklearn)
+- ✅ Evaluation & model selection
+- ✅ Business impact analysis
+
+**Colab'da açmak için:**
+1. Notebook'u Google Drive'a yükleyin
+2. Colab'da açın
+3. Hücreleri sırayla çalıştırın
+
+---
+
 ## 🌐 Environment Support
 
 | Environment | Status | Data Location |
