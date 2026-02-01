@@ -22,7 +22,9 @@ from ..models.registry import ModelRegistry
 from ..training.trainer import ModelTrainer
 from ..training.optimizer import HyperparameterOptimizer
 from ..evaluation.evaluator import ModelEvaluator
+from ..evaluation.evaluator import ModelEvaluator
 from ..evaluation.metrics import BusinessAnalyzer
+from ..evaluation.visualizer import PipelineVisualizer
 
 
 class TrainingPipeline(BasePipeline):
@@ -138,6 +140,30 @@ class TrainingPipeline(BasePipeline):
         
         if business_results:
             self.business_analyzer.generate_business_case(business_results, best_model)
+            
+        # Step 9: Visualize Everything
+        self.logger.info("\n🎨 Step 9: Generating Visualizations...")
+        self.visualizer = PipelineVisualizer(self.config, self.logger)
+        
+        # 1. Target Distribution
+        self.visualizer.plot_target_distribution(splits['y_train'])
+        
+        # 2. Model Comparison
+        self.visualizer.plot_model_comparison(evaluation_results)
+        
+        # 3. ROC Curves
+        self.visualizer.plot_roc_curves(training_results, splits['X_test'], splits['y_test'])
+        
+        # 4. Confusion Matrices
+        self.visualizer.plot_confusion_matrices(evaluation_results)
+        
+        # 5. Feature Importance (Best Model)
+        best_model_obj = training_results[best_model]['model']
+        feature_names = self.feature_engineer.get_feature_names()
+        self.visualizer.plot_feature_importance(best_model_obj, feature_names, best_model)
+        
+        # 6. Business Impact
+        self.visualizer.plot_business_impact(business_results)
         
         # Pipeline complete
         duration = (datetime.now() - start_time).total_seconds()
