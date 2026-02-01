@@ -123,6 +123,10 @@ class TrainingPipeline(BasePipeline):
         
         # Step 7: Select best model
         self.logger.info("\n🏆 Step 7: Selecting best model...")
+        
+        # Perform Friedman Statistical Test (from original project)
+        friedman_results = self.evaluator.perform_friedman_test(training_results)
+        
         best_model, model_scores = self.evaluator.select_best_model(
             training_results, evaluation_results
         )

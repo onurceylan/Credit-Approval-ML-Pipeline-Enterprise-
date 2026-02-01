@@ -17,6 +17,7 @@ from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     roc_auc_score, confusion_matrix, classification_report
 )
+from scipy.stats import friedmanchisquare, rankdata
 
 from ..core.config import PipelineConfig
 from ..core.exceptions import ModelEvaluationError
@@ -129,6 +130,52 @@ class ModelEvaluator:
         self.logger.info(f"      Test AUC: {model_scores[best_model]['test_roc_auc']:.4f}")
         
         return best_model, model_scores
+
+    def perform_friedman_test(self, training_results: Dict[str, Dict]) -> Dict[str, Any]:
+        """
+        Perform Friedman statistical test for model comparison.
+        Matches original project's rigor.
+        """
+        self.logger.info("\n🔬 Performing Friedman Statistical Test...")
+        
+        models = []
+        cv_scores = []
+        
+        for name, result in training_results.items():
+            if 'metrics' in result and 'cv_scores' in result['metrics']:
+                models.append(name)
+                cv_scores.append(result['metrics']['cv_scores'])
+        
+        if len(models) < 3:
+            self.logger.warning("   ⚠️ Not enough models for Friedman test (min 3 required)")
+            return {}
+            
+        try:
+            statistic, p_value = friedmanchisquare(*cv_scores)
+            
+            # Rank models
+            mean_scores = [np.mean(scores) for scores in cv_scores]
+            ranks = rankdata([-m for m in mean_scores])  # Lower rank is better (1st place)
+            
+            rank_dict = {model: float(rank) for model, rank in zip(models, ranks)}
+            
+            result = {
+                'statistic': float(statistic),
+                'p_value': float(p_value),
+                'significant': p_value < 0.05,
+                'ranks': rank_dict
+            }
+            
+            self.logger.info(f"   📊 Friedman Stat: {statistic:.4f}, p-value: {p_value:.4f}")
+            if result['significant']:
+                self.logger.info("   ✅ Significant difference found between models")
+            else:
+                self.logger.info("   ❌ No significant difference found")
+                
+            return result
+        except Exception as e:
+            self.logger.error(f"Error in Friedman test: {e}")
+            return {}
     
     def _save_report(self, evaluation_results: Dict[str, Dict]):
         """Save evaluation report."""

@@ -52,6 +52,20 @@ Eğitim bittikten sonra Drive'ınızdaki `ml_pipeline_output` klasöründe şunl
 - `plots/`: Başarı grafikleri (.png)
 - `results/`: Detaylı raporlar (.json)
 
+### 6. Çıktıları Yorumlama
+
+Eğitim sonrası oluşan dosyaların anlamları:
+
+#### 📊 Grafikler (`plots/`)
+- **model_comparison.png**: Hangi modelin daha başarılı olduğunu gösterir (Accuracy, AUC).
+- **business_impact.png**: Modellerin finansal etkisini (Net Kâr ve ROI) kıyaslar. En yüksek ROI'ye sahip model iş açısından en iyisidir.
+- **roc_curves.png**: Eğri sol üst köşeye ne kadar yakınsa model o kadar iyidir.
+- **feature_importance.png**: Modelin hangi müşteri özelliklerine (Gelir, Yaş vb.) daha çok önem verdiğini gösterir.
+
+#### 📝 Raporlar (`results/`)
+- **Friedman Test**: Modeller arası farkın "şans eseri" olup olmadığını söyler.
+- **Business Case**: "Bu modeli kullanırsak yılda X dolar kâr ederiz" şeklindeki yönetici özetidir.
+
 ---
 
 ## ❓ Sık Karşılaşılan Sorunlar

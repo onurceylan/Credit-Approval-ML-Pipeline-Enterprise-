@@ -100,7 +100,10 @@ class BusinessAnalyzer:
             'total_cost': float(total_cost),
             'total_revenue': float(total_revenue),
             'net_profit': float(net_profit),
-            'roi_percent': float(roi)
+            'roi_percent': float(roi),
+            # Advanced Financial Metrics (from original project)
+            'npv_5_year': float(net_profit * 3.79),  # Approx 5-year NPV with 10% discount
+            'payback_period_months': float(total_cost / (total_revenue / 12)) if total_revenue > 0 else float('inf')
         }
         
         self.logger.info(f"   💵 Net Profit: ${net_profit:,.0f}, ROI: {roi:.1f}%")
