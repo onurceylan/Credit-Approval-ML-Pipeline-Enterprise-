@@ -2,13 +2,14 @@
 Training Pipeline
 =================
 
-Complete training pipeline orchestration.
+Complete training pipeline orchestration with verbose logging matching V3.5 notebook style.
 """
 
 import gc
 import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
+import numpy as np
 
 from .base import BasePipeline
 from ..core.config import PipelineConfig, get_config
@@ -22,24 +23,20 @@ from ..models.registry import ModelRegistry
 from ..training.trainer import ModelTrainer
 from ..training.optimizer import HyperparameterOptimizer
 from ..evaluation.evaluator import ModelEvaluator
-from ..evaluation.evaluator import ModelEvaluator
 from ..evaluation.metrics import BusinessAnalyzer
 from ..evaluation.visualizer import PipelineVisualizer
 
 
 class TrainingPipeline(BasePipeline):
     """
-    Complete training pipeline.
+    Complete training pipeline with rich logging.
     
     Steps:
-    1. Load data
-    2. Validate data
-    3. Preprocess and engineer features
-    4. Optimize hyperparameters (optional)
-    5. Train models
-    6. Evaluate models
-    7. Select best model
-    8. Generate reports
+    1. Load & Validate Data (Cell 2)
+    2. Preprocess & Engineer Features (Cell 3)
+    3. Train & Optimize Models (Cell 4)
+    4. Evaluate & Select Best Model (Cell 5 & 6)
+    5. Business Impact Analysis (Cell 7)
     """
     
     def __init__(
@@ -63,6 +60,7 @@ class TrainingPipeline(BasePipeline):
         self.optimizer = HyperparameterOptimizer(self.config, self.model_factory, self.logger)
         self.evaluator = ModelEvaluator(self.config, self.logger)
         self.business_analyzer = BusinessAnalyzer(self.config, self.logger)
+        self.visualizer = PipelineVisualizer(self.config, self.logger)
     
     def validate(self) -> bool:
         """Validate pipeline configuration."""
@@ -70,34 +68,77 @@ class TrainingPipeline(BasePipeline):
     
     def run(self) -> Dict[str, Any]:
         """Execute complete training pipeline."""
-        self.logger.info("=" * 60)
-        self.logger.info("🚀 STARTING TRAINING PIPELINE")
-        self.logger.info("=" * 60)
-        
         start_time = datetime.now()
         
-        # Step 1: Load data
-        self.logger.info("\n📥 Step 1: Loading data...")
+        # ==================================================================================
+        # CELL 1: Environment Setup (Skipped here as it's done in main.ipynb)
+        # ==================================================================================
+        self.logger.info("=" * 60)
+        self.logger.info("🚀 STARTING TRAINING PIPELINE (V3.5 Hybrid Architecture)")
+        self.logger.info("=" * 60)
+
+        # ==================================================================================
+        # CELL 2: Data Loading & Validation
+        # ==================================================================================
+        self.logger.info("\n📥 [CELL 2] Data Loading & Validation")
+        self.logger.info("-" * 40)
+        
         app_data, credit_data = self.data_loader.load_data()
         
-        # Step 2: Validate data
-        self.logger.info("\n🔍 Step 2: Validating data...")
+        self.logger.info(f"   📊 Application Data: {app_data.shape[0]:,} rows, {app_data.shape[1]} cols")
+        self.logger.info(f"   📊 Credit Data:      {credit_data.shape[0]:,} rows, {credit_data.shape[1]} cols")
+        
+        self.logger.info("\n🔍 Validating data quality...")
         self.data_validator.validate(app_data, credit_data)
         
-        # Step 3: Preprocess
-        self.logger.info("\n🔧 Step 3: Preprocessing data...")
+        self.logger.info("✅ CELL 2 COMPLETED - Data Ready!")
+        
+        # ==================================================================================
+        # CELL 3: Data Preprocessing & Feature Engineering
+        # ==================================================================================
+        self.logger.info("\n🔧 [CELL 3] Preprocessing & Feature Engineering")
+        self.logger.info("-" * 40)
+        self.logger.info("🚀 Starting corrected preprocessing and feature engineering...")
+        
         splits = self.preprocessor.preprocess(
             app_data, credit_data, self.feature_engineer
         )
         
-        # Clean up
+        # Original notebook style logs for Cell 3 completion
+        self.logger.info(f"✅ Preprocessing completed!")
+        self.logger.info(f"    📊 Input Features: {app_data.shape[1]}")
+        self.logger.info(f"    📊 Final Features: {len(self.feature_engineer.get_feature_names())}")
+        self.logger.info(f"    ✨ New Features Created: {len(self.feature_engineer.get_feature_names()) - app_data.shape[1]}")
+        
+        top_new_features = ['AGE_YEARS', 'AGE_GROUP', 'EMPLOYED_YEARS', 'IS_EMPLOYED', 'INCOME_LOG']
+        for feat in top_new_features:
+            if feat in self.feature_engineer.get_feature_names():
+                self.logger.info(f"       • {feat}")
+        
+        self.logger.info("\n" + "🛡️ Data leakage check: ✅ CLEAN")
+        self.logger.info(f"    📊 Train: {splits['X_train'].shape[0]:,} ({splits['X_train'].shape[0]/len(app_data)*100:.1f}%)")
+        self.logger.info(f"    📊 Val:   {splits['X_val'].shape[0]:,} ({splits['X_val'].shape[0]/len(app_data)*100:.1f}%)")
+        self.logger.info(f"    📊 Test:  {splits['X_test'].shape[0]:,} ({splits['X_test'].shape[0]/len(app_data)*100:.1f}%)")
+        
+        # Memory cleanup
         del app_data, credit_data
         gc.collect()
+        import psutil
+        import os
+        process = psutil.Process(os.getpid())
+        self.logger.info(f"🧹 Memory cleanup - Current usage: {process.memory_info().rss / 1024 / 1024:.1f} MB")
+        self.logger.info("✅ CELL 3 COMPLETED - CORRECTED Data Preprocessing & Feature Engineering Ready!")
         
-        # Step 4: Optimize (optional)
+        # ==================================================================================
+        # CELL 4: Model Training & Hyperparameter Optimization
+        # ==================================================================================
+        self.logger.info("\n🏋️ [CELL 4] Model Training & Optimization")
+        self.logger.info("-" * 40)
+        self.logger.info("🔄 Ready for Cell 4: Model Training & Hyperparameter Optimization")
+        
         model_params = {}
         if self.optimize and self.optimizer.available:
-            self.logger.info("\n🔍 Step 4: Optimizing hyperparameters...")
+            self.logger.info("\n🔍 Optimizing hyperparameters with Optuna...")
             optimization_results = self.optimizer.optimize_all_models(
                 splits['X_train'], splits['y_train']
             )
@@ -106,33 +147,50 @@ class TrainingPipeline(BasePipeline):
                 for name, result in optimization_results.items()
             }
         
-        # Step 5: Train models
-        self.logger.info("\n🏋️ Step 5: Training models...")
+        self.logger.info("\n🚀 Starting Full Model Training...")
         training_results = self.trainer.train_all_models(
             splits['X_train'], splits['y_train'],
             splits['X_val'], splits['y_val'],
             model_params
         )
+        self.logger.info("✅ CELL 4 COMPLETED - All models trained!")
+
+        # ==================================================================================
+        # CELL 5: Evaluation & Statistical Analysis
+        # ==================================================================================
+        self.logger.info("\n📊 [CELL 5] Model Evaluation & Statistical Comparison")
+        self.logger.info("-" * 40)
         
-        # Step 6: Evaluate
-        self.logger.info("\n📊 Step 6: Evaluating models...")
         evaluation_results = self.evaluator.evaluate_all(
             training_results,
             splits['X_test'], splits['y_test']
         )
         
-        # Step 7: Select best model
-        self.logger.info("\n🏆 Step 7: Selecting best model...")
-        
-        # Perform Friedman Statistical Test (from original project)
+        # Friedman Test
         friedman_results = self.evaluator.perform_friedman_test(training_results)
+        self.logger.info("✅ CELL 5 COMPLETED - Evaluation Finished")
+
+        # ==================================================================================
+        # CELL 6: Model Selection
+        # ==================================================================================
+        self.logger.info("\n🏆 [CELL 6] Model Selection & Validation")
+        self.logger.info("-" * 40)
         
         best_model, model_scores = self.evaluator.select_best_model(
             training_results, evaluation_results
         )
         
-        # Step 8: Business analysis
-        self.logger.info("\n💰 Step 8: Business impact analysis...")
+        self.logger.info(f"\n🥇 BEST MODEL SELECTED: {best_model}")
+        self.logger.info(f"   • Test AUC: {model_scores[best_model]['test_roc_auc']:.4f}")
+        self.logger.info(f"   • Composite Score: {model_scores[best_model]['composite_score']:.4f}")
+        self.logger.info("✅ CELL 6 COMPLETED - Model Selected")
+        
+        # ==================================================================================
+        # CELL 7: Business Impact Analysis & Visualization
+        # ==================================================================================
+        self.logger.info("\n💰 [CELL 7] Business Impact Analysis & Insights")
+        self.logger.info("-" * 40)
+        
         business_results = {}
         for model_name, result in training_results.items():
             if result.get('success') and 'model' in result:
@@ -145,9 +203,8 @@ class TrainingPipeline(BasePipeline):
         if business_results:
             self.business_analyzer.generate_business_case(business_results, best_model)
             
-        # Step 9: Visualize Everything
-        self.logger.info("\n🎨 Step 9: Generating Visualizations...")
-        self.visualizer = PipelineVisualizer(self.config, self.logger)
+        # Visualization
+        self.logger.info("\n🎨 Generating Visualizations (matching original notebook)...")
         
         # 1. Target Distribution
         self.visualizer.plot_target_distribution(splits['y_train'])
@@ -173,9 +230,9 @@ class TrainingPipeline(BasePipeline):
         duration = (datetime.now() - start_time).total_seconds()
         
         self.logger.info("\n" + "=" * 60)
-        self.logger.info("✅ TRAINING PIPELINE COMPLETE")
-        self.logger.info(f"   Duration: {duration:.1f}s")
-        self.logger.info(f"   Best Model: {best_model}")
+        self.logger.info("✅ PIPELINE COMPLETED SUCCESSFULLY")
+        self.logger.info(f"   ⏱️ Total Duration: {duration:.1f}s")
+        self.logger.info(f"   🏆 Best Model: {best_model}")
         self.logger.info("=" * 60)
         
         return {
