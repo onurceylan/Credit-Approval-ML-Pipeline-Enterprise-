@@ -152,8 +152,8 @@ class TrainingPipeline(BasePipeline):
         # 1. Target Distribution
         self.visualizer.plot_target_distribution(splits['y_train'])
         
-        # 2. Model Comparison
-        self.visualizer.plot_model_comparison(evaluation_results)
+        # 2. Model Comparison (Dashboard)
+        self.visualizer.plot_model_comparison(evaluation_results, training_results)
         
         # 3. ROC Curves
         self.visualizer.plot_roc_curves(training_results, splits['X_test'], splits['y_test'])

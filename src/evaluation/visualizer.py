@@ -61,28 +61,96 @@ class PipelineVisualizer:
         plt.tight_layout()
         self._save_and_show("target_distribution.png")
     
-    def plot_model_comparison(self, evaluation_results: Dict[str, Dict]):
-        """Plot model comparison metrics."""
-        metrics = ['test_accuracy', 'test_roc_auc', 'test_f1']
-        data = []
+    def plot_model_comparison(self, evaluation_results: Dict[str, Dict], training_results: Dict[str, Dict]):
+        """
+        Plot comprehensive model training results (Exact replica of original notebook).
+        Layout: 2x2 Grid
+        - Top Left: Model Performance Comparison (Accuracy vs ROC-AUC)
+        - Top Right: Training Time Comparison
+        - Bottom Left: Cross-Validation Results (with Error Bars)
+        - Bottom Right: Performance by Model Type
+        """
+        plt.figure(figsize=(20, 15))
+        plt.suptitle("Model Training Results", fontsize=16, fontweight='bold', y=0.95)
         
-        for model_name, res in evaluation_results.items():
-            for metric in metrics:
-                data.append({
-                    'Model': model_name,
-                    'Metric': metric.replace('test_', '').upper(),
-                    'Score': res.get(metric, 0)
-                })
+        # Prepare Data
+        models = list(evaluation_results.keys())
+        accuracy = [evaluation_results[m]['test_accuracy'] for m in models]
+        roc_auc = [evaluation_results[m]['test_roc_auc'] for m in models]
         
-        df = pd.DataFrame(data)
+        times = []
+        cv_means = []
+        cv_stds = []
+        model_types = []
         
-        plt.figure(figsize=(12, 6))
-        sns.barplot(data=df, x='Model', y='Score', hue='Metric')
-        plt.title("Model Comparison Metrics")
-        plt.ylim(0, 1.1)
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.tight_layout()
-        self._save_and_show("model_comparison.png")
+        for m in models:
+            tr_res = training_results.get(m, {})
+            metrics = tr_res.get('metrics', {})
+            times.append(metrics.get('training_time', 0))
+            cv_scores = metrics.get('cv_scores', [0])
+            cv_means.append(np.mean(cv_scores))
+            cv_stds.append(np.std(cv_scores))
+            
+            # Determine type
+            if 'XGB' in m: m_type = 'xgboost'
+            elif 'LGBM' in m: m_type = 'lightgbm'
+            elif 'Cat' in m: m_type = 'catboost'
+            else: m_type = 'sklearn'
+            model_types.append(m_type)
+
+        # 1. Top Left: Performance Comparison
+        plt.subplot(2, 2, 1)
+        x = np.arange(len(models))
+        width = 0.35
+        
+        plt.bar(x - width/2, accuracy, width, label='Accuracy', alpha=0.8)
+        plt.bar(x + width/2, roc_auc, width, label='ROC-AUC', alpha=0.8)
+        
+        plt.ylabel('Score')
+        plt.xlabel('Models')
+        plt.title('Model Performance Comparison')
+        plt.xticks(x, models, rotation=45)
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        # 2. Top Right: Training Time
+        plt.subplot(2, 2, 2)
+        bars = plt.bar(models, times, color='skyblue', alpha=0.8)
+        plt.ylabel('Training Time (seconds)')
+        plt.xlabel('Models')
+        plt.title('Training Time Comparison')
+        plt.xticks(rotation=45)
+        plt.grid(True, alpha=0.3)
+        
+        # Add labels
+        for bar in bars:
+            height = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{height:.1f}s',
+                    ha='center', va='bottom', fontsize=8)
+
+        # 3. Bottom Left: CV Results
+        plt.subplot(2, 2, 3)
+        plt.bar(models, cv_means, yerr=cv_stds, capsize=5, color='lightgreen', alpha=0.8)
+        plt.ylabel('CV Score')
+        plt.xlabel('Models')
+        plt.title('Cross-Validation Results')
+        plt.xticks(rotation=45)
+        plt.grid(True, alpha=0.3)
+
+        # 4. Bottom Right: Performance by Type
+        plt.subplot(2, 2, 4)
+        df_type = pd.DataFrame({'Type': model_types, 'AUC': roc_auc})
+        avg_by_type = df_type.groupby('Type')['AUC'].mean().sort_values(ascending=False)
+        
+        plt.bar(avg_by_type.index, avg_by_type.values, color='lightsalmon', alpha=0.8)
+        plt.ylabel('Average ROC AUC')
+        plt.xlabel('Model Type')
+        plt.title('Performance by Model Type')
+        plt.grid(True, alpha=0.3)
+
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        self._save_and_show("training_results_dashboard.png")
 
     def plot_roc_curves(self, training_results: Dict[str, Dict], X_test: pd.DataFrame, y_test: pd.Series):
         """Plot ROC curves for all models."""
