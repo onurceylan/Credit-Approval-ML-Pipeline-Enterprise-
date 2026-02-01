@@ -102,7 +102,8 @@ class FeatureEngineer:
         # Encode categorical columns
         for col, encoder in self.encoders.items():
             if col in X_transformed.columns:
-                X_transformed[col] = X_transformed[col].fillna('Unknown').astype(str)
+                # Convert to string/object first to handle 'Unknown' category safely
+                X_transformed[col] = X_transformed[col].astype(object).fillna('Unknown').astype(str)
                 try:
                     X_transformed[col] = encoder.transform(X_transformed[col])
                 except ValueError:
@@ -130,7 +131,7 @@ class FeatureEngineer:
                 df['AGE_YEARS'],
                 bins=[0, 25, 35, 45, 55, 65, 100],
                 labels=['18-25', '26-35', '36-45', '46-55', '56-65', '65+']
-            )
+            ).astype(str)  # Convert to string to avoid category issues
         
         # Employment features
         if 'DAYS_EMPLOYED' in df.columns:
@@ -147,7 +148,7 @@ class FeatureEngineer:
                 df['AMT_INCOME_TOTAL'],
                 bins=[0, 50000, 100000, 200000, float('inf')],
                 labels=['Low', 'Medium', 'High', 'Very High']
-            )
+            ).astype(str)  # Convert to string to avoid category issues
         
         # Family features
         if 'CNT_CHILDREN' in df.columns and 'CNT_FAM_MEMBERS' in df.columns:
