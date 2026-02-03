@@ -65,7 +65,7 @@ data/processed/*.parquet
 ml_pipeline_output/
 wandb/
 .idea/
-multimodal-credit-approval-V3.5-master/b
+multimodal-credit-approval-V3.5-master/
 *.joblib
 *.pkl
 *.pickle
