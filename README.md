@@ -68,24 +68,24 @@ graph TD
 
 ```text
 credit-approval/
-├── 📁 configs/                  # Pipeline Konfigürasyonları (YAML)
-├── 📁 data/                     # Veri Setleri (Lokal - Gitignore)
-├── 📁 docker/                   # Containerization Dosyaları (Docker/Compose)
-├── 📁 ml_pipeline_output/       # Pipeline Çıktıları (Modeller, Grafikler, Raporlar)
-├── 📁 scripts/                  # Yardımcı Betikler (Train/Predict)
-├── 📁 src/                      # Ana Kaynak Kodlar (Modüler Yapı)
-│   ├── 📁 core/                 # Temel Bileşenler (Config, Logger)
-│   ├── 📁 data/                 # Veri İşleme ve Doğrulama
-│   ├── 📁 features/             # Öznitelik Mühendisliği
-│   ├── 📁 models/               # Model Yönetimi ve Factory
-│   ├── 📁 training/             # Eğitim ve Optimizasyon
-│   ├── 📁 evaluation/           # Değerlendirme ve İş Analizi
-│   └── 📁 pipelines/            # Pipeline Orkestrasyonu
-├── 📁 tests/                    # Birim ve Entegrasyon Testleri
-├── COLAB.md                     # Google Colab Kullanım Kılavuzu
-├── README.md                    # Proje Ana Dokümantasyonu
-├── requirements.txt             # Bağımlılık Listesi
-└── setup.py                     # Paket Kurulum Dosyası
+├── 📁 configs/                  # Pipeline Configurations (YAML)
+├── 📁 data/                     # Data Sets
+├── 📁 docker/                   # Containerization Files (Docker/Compose)
+├── 📁 ml_pipeline_output/       # Pipeline Outputs (Models, Plots, Reports)
+├── 📁 scripts/                  # Helper Scripts (Train/Predict)
+├── 📁 src/                      # Source Code (Modular Structure)
+│   ├── 📁 core/                 # Core Components (Config, Logger)
+│   ├── 📁 data/                 # Data Processing & Validation
+│   ├── 📁 features/             # Feature Engineering
+│   ├── 📁 models/               # Model Management & Factory
+│   ├── 📁 training/             # Training & Optimization
+│   ├── 📁 evaluation/           # Evaluation & Business Analysis
+│   └── 📁 pipelines/            # Pipeline Orchestration
+├── 📁 tests/                    # Unit & Integration Tests
+├── COLAB.md                     # Google Colab User Guide
+├── README.md                    # Project Documentation
+├── requirements.txt             # Dependency List
+└── setup.py                     # Package Setup File
 ```
 
 ---
