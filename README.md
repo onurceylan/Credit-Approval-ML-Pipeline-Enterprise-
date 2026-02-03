@@ -1,4 +1,4 @@
-# 📊 Pro-Level Credit Approval ML Pipeline (Enterprise V3.5)
+# 📊 Credit Approval ML Pipeline (Enterprise)
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![MLOps](https://img.shields.io/badge/MLOps-Ready-brightgreen.svg)
@@ -68,23 +68,24 @@ graph TD
 
 ```text
 credit-approval/
-├── 📁 src/                      # Modüler Üretim Kodları (Paket Yapısı)
-│   ├── 📁 core/                 # Konfigürasyon ve Logger Yönetimi
-│   ├── 📁 data/                 # Veri Yükleme ve Kalite Kontrol (Validator)
-│   ├── 📁 features/             # Öznitelik Mühendisliği ve Preprocessing
-│   ├── 📁 models/               # Model Fabrikası ve Versiyonlanmış Kayıt (Registry)
-│   ├── 📁 training/             # Trainer ve Optuna Optimizasyon Katmanı
-│   ├── 📁 evaluation/           # [Enterprise] İstatistiksel Testler ve Finansal Analiz
-│   └── 📁 pipelines/            # Ana Pipeline Orkestrasyonu
-├── 📁 ml_pipeline_output/       # Pipeline Çıktıları (Versioned)
-│   ├── 📁 models/               # .joblib formatında eğitilmiş modeller
-│   ├── 📁 plots/                # Dashboard'lar ve Analiz Grafikleri (20+ PNG)
-│   ├── 📁 results/              # İş vakası (Business Case) ve Metrik Raporları (JSON/TXT)
-│   └── 📁 logs/                 # Detaylı çalışma logları
-├── main.ipynb                   # İnteraktif Colab/Jupyter Arayüzü
-├── main.py                      # CLI (Komut Satırı) Arayüzü
+├── 📁 configs/                  # Pipeline Konfigürasyonları (YAML)
+├── 📁 data/                     # Veri Setleri (Raw & Processed)
+├── 📁 docker/                   # Containerization Dosyaları
+├── 📁 ml_pipeline_output/       # Pipeline Çıktıları (Models, Plots, Results)
+├── 📁 scripts/                  # Yardımcı Betikler ve Araçlar
+├── 📁 src/                      # Ana Kaynak Kodlar (Modüler Yapı)
+│   ├── 📁 core/                 # Temel Bileşenler (Config, Logger)
+│   ├── 📁 data/                 # Veri İşleme ve Doğrulama
+│   ├── 📁 features/             # Öznitelik Mühendisliği
+│   ├── 📁 models/               # Model Yönetimi ve Factory
+│   ├── 📁 training/             # Eğitim ve Optimizasyon
+│   ├── 📁 evaluation/           # Değerlendirme ve İş Analizi
+│   └── 📁 pipelines/            # Pipeline Orkestrasyonu
+├── 📁 tests/                    # Birim ve Entegrasyon Testleri
+├── COLAB.md                     # Google Colab Kullanım Kılavuzu
+├── README.md                    # Proje Ana Dokümantasyonu
 ├── requirements.txt             # Bağımlılık Listesi
-└── README.md                    # Bu Kılavuz
+└── setup.py                     # Paket Kurulum Dosyası
 ```
 
 ---
@@ -193,7 +194,6 @@ Enterprise-grade business analysis with ROI calculations, stakeholder reports, a
 ### Custom Model Integration
 You can easily add new models to the framework by extending the `ModelFactory`:
 ```python
-# src/models/factory.py içinde CustomModelFactory oluşturun
 ```
 
 ### Custom Business Metrics
@@ -216,4 +216,3 @@ python main.py
 4. Run all cells sequentially.
 
 ---
-*Developed for Pro-Grade Credit Risk Management - Hybrid V3.5 Framework*
