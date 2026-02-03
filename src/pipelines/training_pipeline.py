@@ -281,10 +281,16 @@ class TrainingPipeline(BasePipeline):
         # Save A/B Results
         import json
         from pathlib import Path
+        from dataclasses import asdict
+        
         ab_report_path = Path(self.config.output_dir) / self.config.results_dir / "ab_test_report.json"
+        
+        # Prepare a clean dictionary for JSON (excluding the large bootstrap distributions)
+        report_data = asdict(ab_results)
+        report_data.pop('champion_metrics', None)
+        report_data.pop('challenger_metrics', None)
+        
         with open(ab_report_path, 'w') as f:
-            # Filter out raw_data (too large) for the JSON report
-            report_data = {k: v for k, v in ab_results.items() if k != 'raw_data'}
             json.dump(report_data, f, indent=4)
             
         self.ab_visualizer.plot_simulation_results(ab_results)

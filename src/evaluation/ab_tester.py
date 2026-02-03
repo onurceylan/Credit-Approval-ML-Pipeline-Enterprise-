@@ -1,129 +1,207 @@
 """
-Offline A/B Simulator
-=====================
+Advanced Offline A/B Simulator
+==============================
 
-Simulates A/B testing between a champion (baseline) and a challenger model.
+This module implements offline A/B testing simulation to compare Champion (baseline) 
+and Challenger (new) models using bootstrap resampling and statistical validation.
+
+Based on Enterprise ML Standards.
 """
 
 import logging
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional
+from typing import Dict, List, Tuple, Optional
 from scipy import stats
-
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, 
+    f1_score, roc_auc_score, confusion_matrix
+)
+from dataclasses import dataclass
 from ..core.config import PipelineConfig
+
+
+@dataclass
+class ABTestResult:
+    """Data class to store comprehensive A/B test results"""
+    champion_metrics: Dict[str, List[float]]
+    challenger_metrics: Dict[str, List[float]]
+    statistical_tests: Dict[str, Dict[str, Any]]
+    winner: str
+    confidence_level: float
+    effect_size: float
+    business_impact: Dict[str, float]
+    traffic_split: float
 
 
 class OfflineABSimulator:
     """
-    Simulates A/B testing using historical data.
+    Simulates A/B testing between Champion and Challenger models using Bootstrap.
     
-    Compares a 'Champion' (usually a baseline like Logistic Regression) 
-    against a 'Challenger' (the best model from the pipeline).
+    Attributes:
+        config: Pipeline configuration (for random state and financial logic)
+        n_iterations: Number of bootstrap iterations (default: 1000)
     """
     
-    def __init__(self, config: PipelineConfig, logger: Optional[logging.Logger] = None):
+    def __init__(
+        self, 
+        config: PipelineConfig, 
+        n_iterations: int = 1000,
+        logger: Optional[logging.Logger] = None
+    ):
         self.config = config
+        self.n_iterations = n_iterations
         self.logger = logger or logging.getLogger(__name__)
+        self.confidence_level = 0.95
+        np.random.seed(self.config.random_state)
         
     def run_simulation(
         self, 
         champion_model: Any, 
         challenger_model: Any, 
         X_test: pd.DataFrame, 
-        y_test: pd.Series
-    ) -> Dict[str, Any]:
+        y_test: pd.Series,
+        traffic_split: float = 0.5
+    ) -> ABTestResult:
         """
-        Run randomization and performance comparison.
+        Run A/B test simulation with bootstrap resampling.
         """
-        self.logger.info("🧪 Running Offline A/B Simulation...")
+        self.logger.info(f"🧪 Running Advanced A/B Simulation ({self.n_iterations} iterations)...")
+        self.logger.info(f"   Traffic Split: {traffic_split*100:.0f}% Champion / {(1-traffic_split)*100:.0f}% Challenger")
         
-        # 1. Randomly split test set into Group A (Champion) and Group B (Challenger)
-        np.random.seed(self.config.random_state)
-        indices = np.random.permutation(len(X_test))
-        split_idx = len(X_test) // 2
+        # Storage for results
+        champion_scores = {m: [] for m in ['accuracy', 'precision', 'recall', 'f1', 'auc', 'roi']}
+        challenger_scores = {m: [] for m in ['accuracy', 'precision', 'recall', 'f1', 'auc', 'roi']}
         
-        indices_a = indices[:split_idx]
-        indices_b = indices[split_idx:]
+        # Determine sample sizes based on traffic split
+        total_size = len(X_test)
+        champ_sample_size = int(total_size * traffic_split)
+        chall_sample_size = total_size - champ_sample_size
         
-        X_a, y_a = X_test.iloc[indices_a], y_test.iloc[indices_a]
-        X_b, y_b = X_test.iloc[indices_b], y_test.iloc[indices_b]
+        for i in range(self.n_iterations):
+            # Create bootstrap samples for each group
+            X_champ, y_champ = self._bootstrap_sample(X_test, y_test, champ_sample_size)
+            X_chall, y_chall = self._bootstrap_sample(X_test, y_test, chall_sample_size)
+            
+            # Evaluate Champion
+            champ_res = self._evaluate_model(champion_model, X_champ, y_champ)
+            # Evaluate Challenger
+            chall_res = self._evaluate_model(challenger_model, X_chall, y_chall)
+            
+            for m in champion_scores.keys():
+                champion_scores[m].append(champ_res[m])
+                challenger_scores[m].append(chall_res[m])
+                
+            if (i + 1) % 250 == 0:
+                self.logger.info(f"   Processed {i+1} iterations...")
         
-        # 2. Predictions
-        y_pred_a = champion_model.predict(X_a)
-        y_pred_b = challenger_model.predict(X_b)
+        # Statistical analysis
+        statistical_tests = self._perform_statistical_tests(champion_scores, challenger_scores)
+        winner = self._determine_winner(statistical_tests)
+        effect_size = self._calculate_effect_size(champion_scores['f1'], challenger_scores['f1'])
+        business_impact = self._calculate_business_impact(champion_scores['roi'], challenger_scores['roi'])
         
-        # 3. Calculate Performance Metrics
-        metrics_a = self._calculate_basic_metrics(y_a, y_pred_a)
-        metrics_b = self._calculate_basic_metrics(y_b, y_pred_b)
+        result = ABTestResult(
+            champion_metrics=champion_scores,
+            challenger_metrics=challenger_scores,
+            statistical_tests=statistical_tests,
+            winner=winner,
+            confidence_level=self.confidence_level,
+            effect_size=effect_size,
+            business_impact=business_impact,
+            traffic_split=traffic_split
+        )
         
-        # 4. Financial Simulation
-        profit_a = self._simulate_profit(y_a, y_pred_a)
-        profit_b = self._simulate_profit(y_b, y_pred_b)
+        self.logger.info(f"✅ Simulation complete! Winner: {winner} (Profit Lift: {business_impact['roi_improvement_pct']:.2f}%)")
+        return result
+
+    def _bootstrap_sample(self, X: pd.DataFrame, y: pd.Series, size: int) -> Tuple[pd.DataFrame, pd.Series]:
+        indices = np.random.choice(len(X), size=size, replace=True)
+        return X.iloc[indices], y.iloc[indices]
+
+    def _evaluate_model(self, model: Any, X: pd.DataFrame, y: pd.Series) -> Dict[str, float]:
+        y_pred = model.predict(X)
         
-        # 5. Statistical Significance (T-test on profit samples)
-        t_stat, p_value = stats.ttest_ind(profit_a['samples'], profit_b['samples'])
-        
-        # 6. Summary
-        lift = ((metrics_b['accuracy'] - metrics_a['accuracy']) / metrics_a['accuracy']) * 100
-        profit_lift = ((profit_b['total'] - profit_a['total']) / profit_a['total']) * 100
-        
-        results = {
-            'group_a': {
-                'size': len(X_a),
-                'accuracy': float(metrics_a['accuracy']),
-                'precision': float(metrics_a['precision']),
-                'total_profit': float(profit_a['total']),
-                'approval_rate': float(np.mean(y_pred_a == 0))
-            },
-            'group_b': {
-                'size': len(X_b),
-                'accuracy': float(metrics_b['accuracy']),
-                'precision': float(metrics_b['precision']),
-                'total_profit': float(profit_b['total']),
-                'approval_rate': float(np.mean(y_pred_b == 0))
-            },
-            'comparison': {
-                'accuracy_lift_pct': float(lift),
-                'profit_lift_pct': float(profit_lift),
-                'p_value': float(p_value),
-                'significant': p_value < 0.05
-            },
-            'raw_data': {
-                'profit_samples_a': profit_a['samples'].tolist(),
-                'profit_samples_b': profit_b['samples'].tolist()
-            }
+        try:
+            if hasattr(model, "predict_proba"):
+                y_proba = model.predict_proba(X)[:, 1]
+                auc = roc_auc_score(y, y_proba)
+            else:
+                auc = 0.0
+        except:
+            auc = 0.0
+            
+        return {
+            'accuracy': accuracy_score(y, y_pred),
+            'precision': precision_score(y, y_pred, zero_division=0),
+            'recall': recall_score(y, y_pred, zero_division=0),
+            'f1': f1_score(y, y_pred, zero_division=0),
+            'auc': auc,
+            'roi': self._calculate_roi(y, y_pred)
         }
-        
-        self.logger.info(f"   📊 A/B Result: Profit Lift = {profit_lift:.2f}%, p-value = {p_value:.4f}")
+
+    def _calculate_roi(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
+        """Calculates ROI based on project-specific financial variables."""
+        rev = self.config.revenue_per_approval
+        cost_fp = self.config.cost_false_positive # Approved but default
+        # Simple ROI per app logic
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[1, 0]).ravel() # Labels [Bad, Good]
+        # tp: Good approved (+rev)
+        # fp: Bad approved (-cost_fp)
+        # fn: Good rejected (-rev cost? no, handled in business analyst as opportunity cost, here we stick to net profit)
+        net_profit = (tp * rev) - (fp * cost_fp)
+        return net_profit / len(y_true)
+
+    def _perform_statistical_tests(self, champ_scores, chall_scores) -> Dict[str, Dict[str, Any]]:
+        results = {}
+        for m in champ_scores.keys():
+            champ_vals = champ_scores[m]
+            chall_vals = chall_scores[m]
+            
+            # Mann-Whitney U test (non-parametric)
+            _, p_value = stats.mannwhitneyu(chall_vals, champ_vals, alternative='two-sided')
+            
+            results[m] = {
+                'p_value': float(p_value),
+                'is_significant': p_value < (1 - self.confidence_level),
+                'champion_mean': float(np.mean(champ_vals)),
+                'challenger_mean': float(np.mean(chall_vals)),
+                'champion_ci': np.percentile(champ_vals, [2.5, 97.5]).tolist(),
+                'challenger_ci': np.percentile(chall_vals, [2.5, 97.5]).tolist(),
+                'relative_improvement': float(((np.mean(chall_vals) - np.mean(champ_vals)) / np.mean(champ_vals) * 100) if np.mean(champ_vals) != 0 else 0)
+            }
         return results
 
-    def _calculate_basic_metrics(self, y_true, y_pred):
-        acc = np.mean(y_true == y_pred)
-        # Simplified precision for 0 class (Good)
-        tp = np.sum((y_true == 0) & (y_pred == 0))
-        fp = np.sum((y_true == 1) & (y_pred == 0))
-        prec = tp / (tp + fp) if (tp + fp) > 0 else 0
-        return {'accuracy': acc, 'precision': prec}
+    def _calculate_effect_size(self, champ_vals, chall_vals) -> float:
+        pooled_std = np.sqrt((np.var(champ_vals) + np.var(chall_vals)) / 2)
+        if pooled_std == 0: return 0.0
+        return float((np.mean(chall_vals) - np.mean(champ_vals)) / pooled_std)
 
-    def _simulate_profit(self, y_true, y_pred) -> Dict[str, Any]:
-        """Calculates per-decision profit samples for statistical testing."""
-        # Financial logic (matches business.py)
-        rev = self.config.revenue_per_approval
-        cost_fp = self.config.cost_false_positive # Bad approved
+    def _determine_winner(self, stats_res: Dict) -> str:
+        chall_wins = 0
+        champ_wins = 0
+        for m in ['accuracy', 'f1', 'auc', 'roi']:
+            if stats_res[m]['is_significant']:
+                if stats_res[m]['challenger_mean'] > stats_res[m]['champion_mean']:
+                    chall_wins += 1
+                else:
+                    champ_wins += 1
+        if chall_wins > champ_wins: return 'Challenger'
+        if champ_wins > chall_wins: return 'Champion'
+        return 'Tie'
+
+    def _calculate_business_impact(self, champ_roi, chall_roi) -> Dict[str, float]:
+        c_mean = np.mean(champ_roi)
+        l_mean = np.mean(chall_roi)
+        diff = l_mean - c_mean
+        diff_pct = (diff / abs(c_mean) * 100) if c_mean != 0 else 0
         
-        samples = []
-        for yt, yp in zip(y_true, y_pred):
-            if yp == 0: # Approved
-                if yt == 0: # Good
-                    samples.append(rev)
-                else: # Bad (False Positive)
-                    samples.append(-cost_fp)
-            else: # Rejected
-                samples.append(0)
-                
-        samples = np.array(samples)
+        # Scale to 10k monthly apps
+        annual_impact = diff * 10000 * 12
         return {
-            'total': np.sum(samples),
-            'samples': samples
+            'champion_roi_per_app': float(c_mean),
+            'challenger_roi_per_app': float(l_mean),
+            'roi_improvement_per_app': float(diff),
+            'roi_improvement_pct': float(diff_pct),
+            'annual_financial_impact': float(annual_impact)
         }

@@ -242,65 +242,92 @@ class ABTestVisualizer:
         fig.savefig(path, bbox_inches='tight', dpi=100)
         plt.close(fig)
 
-    def plot_simulation_results(self, ab_results: Dict[str, Any], filename: str = "ab_test_dashboard.png"):
-        """Creates a 4-panel A/B simulation dashboard."""
-        self.logger.info("📈 Plotting A/B simulation dashboard...")
+    def plot_simulation_results(self, results: Any, filename: str = "ab_test_dashboard.png"):
+        """Creates an advanced A/B simulation dashboard with distributions and boxplots."""
+        self.logger.info("📈 Plotting advanced A/B simulation dashboard...")
         
-        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-        fig.suptitle("Offline A/B Simulation Dashboard: Champion vs. Challenger", fontsize=18, fontweight='bold')
+        fig = plt.figure(figsize=(20, 14))
+        gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
+        fig.suptitle("Advanced Offline A/B Simulation: Bootstrap Analysis", fontsize=20, fontweight='bold', y=0.98)
         
-        # 1. Metric Comparison
-        metrics = ['accuracy', 'precision', 'approval_rate']
-        a_vals = [ab_results['group_a'][m] for m in metrics]
-        b_vals = [ab_results['group_b'][m] for m in metrics]
+        champion_color = '#95a5a6'
+        challenger_color = '#3498db'
+        metrics = ['accuracy', 'precision', 'recall', 'f1', 'auc', 'roi']
         
-        x = np.arange(len(metrics))
-        width = 0.35
-        
-        axes[0, 0].bar(x - width/2, a_vals, width, label='Champion (A)', color='#95a5a6')
-        axes[0, 0].bar(x + width/2, b_vals, width, label='Challenger (B)', color='#3498db')
-        axes[0, 0].set_xticks(x)
-        axes[0, 0].set_xticklabels([m.replace('_', ' ').title() for m in metrics])
-        axes[0, 0].set_title("Key Performance Comparison", fontsize=14)
-        axes[0, 0].legend()
-        axes[0, 0].grid(axis='y', linestyle='--', alpha=0.7)
+        # 1. Distribution Comparison (Top row)
+        for idx, metric in enumerate(metrics[:3]):
+            ax = fig.add_subplot(gs[0, idx])
+            
+            champ_data = results.champion_metrics[metric]
+            chall_data = results.challenger_metrics[metric]
+            
+            ax.hist(champ_data, bins=30, alpha=0.6, label='Champion', color=champion_color)
+            ax.hist(chall_data, bins=30, alpha=0.6, label='Challenger', color=challenger_color)
+            
+            ax.axvline(np.mean(champ_data), color=champion_color, linestyle='--', linewidth=2)
+            ax.axvline(np.mean(chall_data), color=challenger_color, linestyle='--', linewidth=2)
+            
+            ax.set_title(f'{metric.upper()} Distribution', fontsize=12, fontweight='bold')
+            ax.legend(fontsize=9)
+            ax.grid(True, alpha=0.3)
 
-        # 2. Cumulative Profit
-        samples_a = np.cumsum(ab_results['raw_data']['profit_samples_a'])
-        samples_b = np.cumsum(ab_results['raw_data']['profit_samples_b'])
-        
-        axes[0, 1].plot(samples_a, label='Champion (Group A)', color='#95a5a6', linewidth=2)
-        axes[0, 1].plot(samples_b, label='Challenger (Group B)', color='#2ecc71', linewidth=2)
-        axes[0, 1].set_title("Cumulative Simulated Profit", fontsize=14)
-        axes[0, 1].set_xlabel("Number of Applications")
-        axes[0, 1].set_ylabel("Total Profit ($)")
-        axes[0, 1].legend()
-        axes[0, 1].grid(linestyle='--', alpha=0.7)
+        # 2. Box plots (Middle row)
+        for idx, metric in enumerate(metrics[3:6]):
+            ax = fig.add_subplot(gs[1, idx])
+            
+            data_to_plot = [results.champion_metrics[metric], results.challenger_metrics[metric]]
+            bp = ax.boxplot(data_to_plot, labels=['Champion', 'Challenger'], patch_artist=True, widths=0.6)
+            
+            bp['boxes'][0].set_facecolor(champion_color)
+            bp['boxes'][1].set_facecolor(challenger_color)
+            
+            ax.set_title(f'{metric.upper()} Comparison', fontsize=12, fontweight='bold')
+            ax.grid(True, alpha=0.3, axis='y')
 
-        # 3. Lift Summary Table
-        comp = ab_results['comparison']
-        data = [
-            ["Profit Lift", f"{comp['profit_lift_pct']:.2f}%"],
-            ["Accuracy Lift", f"{comp['accuracy_lift_pct']:.2f}%"],
-            ["P-Value", f"{comp['p_value']:.4f}"],
-            ["Significant", "YES" if comp['significant'] else "NO"]
-        ]
+        # 3. P-value visualization
+        ax = fig.add_subplot(gs[2, 0])
+        metric_names = list(results.statistical_tests.keys())
+        p_values = [results.statistical_tests[m]['p_value'] for m in metric_names]
+        colors_p = [challenger_color if p < 0.05 else champion_color for p in p_values]
         
-        table = axes[1, 0].table(cellText=data, colLabels=["Metric", "Delta / Status"], 
-                                loc='center', cellLoc='center')
-        table.set_fontsize(14)
-        table.scale(1, 4)
-        axes[1, 0].axis('off')
-        axes[1, 0].set_title("Statistical Significance & Lift", fontsize=14)
+        ax.barh(metric_names, p_values, color=colors_p, alpha=0.8)
+        ax.axvline(0.05, color='#e74c3c', linestyle='--', label='α = 0.05')
+        ax.set_title('Statistical Significance (p-values)', fontsize=12, fontweight='bold')
+        ax.set_xlabel('P-value')
+        ax.legend()
+        ax.grid(True, alpha=0.3, axis='x')
 
-        # 4. Profit Distribution
-        # Use boxplot to show distribution of profit per decision
-        axes[1, 1].boxplot([ab_results['raw_data']['profit_samples_a'], 
-                           ab_results['raw_data']['profit_samples_b']], 
-                          labels=['Champion', 'Challenger'], patch_artist=True)
-        axes[1, 1].set_title("Profit-per-Decision Distribution", fontsize=14)
-        axes[1, 1].grid(axis='y', linestyle='--', alpha=0.7)
+        # 4. Relative Improvement
+        ax = fig.add_subplot(gs[2, 1])
+        improvements = [results.statistical_tests[m]['relative_improvement'] for m in metric_names]
+        colors_imp = [challenger_color if i > 0 else champion_color for i in improvements]
         
+        ax.barh(metric_names, improvements, color=colors_imp, alpha=0.8)
+        ax.axvline(0, color='black', linewidth=1)
+        ax.set_title('Relative Improvement (%)', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Challenger vs Champion %')
+        ax.grid(True, alpha=0.3, axis='x')
+
+        # 5. Business Summary
+        ax = fig.add_subplot(gs[2, 2])
+        ax.axis('off')
+        bi = results.business_impact
+        summary_text = (
+            f"BUSINESS IMPACT SUMMARY\n"
+            f"========================\n"
+            f"Winner: {results.winner}\n"
+            f"Effect Size (Cohen's d): {results.effect_size:.4f}\n\n"
+            f"ROI / Profit Analysis:\n"
+            f"  Champ: ${bi['champion_roi_per_app']:,.2f}/app\n"
+            f"  Chall: ${bi['challenger_roi_per_app']:,.2f}/app\n"
+            f"  Lift: {bi['roi_improvement_pct']:+.2f}%\n\n"
+            f"Annual Financial Impact:\n"
+            f"  ${bi['annual_financial_impact']:+,.0f}"
+        )
+        ax.text(0.05, 0.95, summary_text, transform=ax.transAxes, fontsize=12,
+                verticalalignment='top', fontfamily='monospace',
+                bbox=dict(boxstyle='round', facecolor='#f1c40f', alpha=0.2))
+
         self._save_and_show(fig, filename)
 
     def plot_business_impact(self, business_results: Dict[str, Dict]):
