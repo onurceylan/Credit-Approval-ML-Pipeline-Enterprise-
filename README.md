@@ -192,8 +192,7 @@ Enterprise-grade business analysis with ROI calculations, stakeholder reports, a
 
 ### Custom Model Integration
 You can easily add new models to the framework by extending the `ModelFactory`:
-```python
-```
+
 
 ### Custom Business Metrics
 To add industry-specific financial metrics, modify the `BusinessImpactAnalyst` class in `src/evaluation/business.py`.
