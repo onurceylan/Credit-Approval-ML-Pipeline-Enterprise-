@@ -25,7 +25,7 @@ from ..training.optimizer import HyperparameterOptimizer
 from ..evaluation.evaluator import ModelEvaluator, ModelSelector, FinalValidator, ModelInterpretabilityAnalyzer, FinalRecommendationEngine
 from ..evaluation.business import BusinessImpactAnalyst
 from ..evaluation.visualizer import PipelineVisualizer, BusinessVisualizationEngine, SelectionVisualizer, ABTestVisualizer
-from ..evaluation.ab_tester import OfflineABSimulator
+from ..evaluation.ab_testing import ABTestSimulator
 
 
 class TrainingPipeline(BasePipeline):
@@ -69,7 +69,7 @@ class TrainingPipeline(BasePipeline):
         self.visualizer = PipelineVisualizer(self.config, self.logger)
         self.business_visualizer = BusinessVisualizationEngine(self.config, self.logger)
         self.selection_visualizer = SelectionVisualizer(self.config, self.logger)
-        self.ab_simulator = OfflineABSimulator(self.config, self.logger)
+        self.ab_simulator = None # Initialized during run with models
         self.ab_visualizer = ABTestVisualizer(self.config, self.logger)
     
     def validate(self) -> bool:
@@ -271,12 +271,17 @@ class TrainingPipeline(BasePipeline):
         self.logger.info(f"   🥊 Champion: {champion_name}")
         self.logger.info(f"   🎖️ Challenger: {best_model}")
         
-        ab_results = self.ab_simulator.run_simulation(
+        # Re-initialize with full required params
+        self.ab_simulator = ABTestSimulator(
             champion_model=champion_model_obj,
             challenger_model=best_model_obj,
             X_test=splits['X_test'],
-            y_test=splits['y_test']
+            y_test=splits['y_test'],
+            config=self.config,
+            logger=self.logger
         )
+        
+        ab_results = self.ab_simulator.run_simulation(verbose=True)
         
         # Save A/B Results
         import json
@@ -293,7 +298,10 @@ class TrainingPipeline(BasePipeline):
         with open(ab_report_path, 'w') as f:
             json.dump(report_data, f, indent=4)
             
-        self.ab_visualizer.plot_simulation_results(ab_results)
+        # Use simulator's internal plotting for consistency with notebook
+        ab_plot_path = Path(self.config.output_dir) / self.config.plots_dir / "ab_test_dashboard.png"
+        self.ab_simulator.plot_results(ab_results, save_path=str(ab_plot_path))
+        
         self.logger.info("✅ CELL 8 COMPLETED - A/B Simulation Finished")
         
         # Pipeline complete
@@ -312,6 +320,7 @@ class TrainingPipeline(BasePipeline):
             'evaluation_results': evaluation_results,
             'business_results': business_analysis,
             'ab_results': ab_results,
+            'splits': splits,
             'feature_engineer': self.feature_engineer,
             'duration': duration
         }
