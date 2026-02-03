@@ -62,7 +62,7 @@ data/processed/*.parquet
 # ===========================================
 # ML Pipeline Output (çıktılar - Git'e ekleme)
 # ===========================================
-ml_pipeline_output/
+# ml_pipeline_output/
 wandb/
 .idea/
 multimodal-credit-approval-V3.5-master/
