@@ -22,9 +22,9 @@ from ..models.factory import ModelFactory
 from ..models.registry import ModelRegistry
 from ..training.trainer import ModelTrainer
 from ..training.optimizer import HyperparameterOptimizer
-from ..evaluation.evaluator import ModelEvaluator
-from ..evaluation.metrics import BusinessAnalyzer
-from ..evaluation.visualizer import PipelineVisualizer
+from ..evaluation.evaluator import ModelEvaluator, ModelSelector, FinalValidator, ModelInterpretabilityAnalyzer, FinalRecommendationEngine
+from ..evaluation.business import BusinessImpactAnalyst
+from ..evaluation.visualizer import PipelineVisualizer, BusinessVisualizationEngine, SelectionVisualizer
 
 
 class TrainingPipeline(BasePipeline):
@@ -59,8 +59,15 @@ class TrainingPipeline(BasePipeline):
         self.trainer = ModelTrainer(self.config, self.model_factory, self.model_registry, self.logger)
         self.optimizer = HyperparameterOptimizer(self.config, self.model_factory, self.logger)
         self.evaluator = ModelEvaluator(self.config, self.logger)
-        self.business_analyzer = BusinessAnalyzer(self.config, self.logger)
+        self.selector = ModelSelector(self.config, self.logger)
+        self.validator = FinalValidator(self.config, self.logger)
+        self.interpretability = ModelInterpretabilityAnalyzer(self.logger)
+        self.business_analyst = BusinessImpactAnalyst(self.logger)
+        self.recommendation_engine = FinalRecommendationEngine(self.logger)
+        
         self.visualizer = PipelineVisualizer(self.config, self.logger)
+        self.business_visualizer = BusinessVisualizationEngine(self.config, self.logger)
+        self.selection_visualizer = SelectionVisualizer(self.config, self.logger)
     
     def validate(self) -> bool:
         """Validate pipeline configuration."""
@@ -171,60 +178,77 @@ class TrainingPipeline(BasePipeline):
         self.logger.info("✅ CELL 5 COMPLETED - Evaluation Finished")
 
         # ==================================================================================
-        # CELL 6: Model Selection
+        # CELL 6: Model Selection & Final Validation
         # ==================================================================================
-        self.logger.info("\n🏆 [CELL 6] Model Selection & Validation")
+        self.logger.info("\n🏆 [CELL 6] Advanced Model Selection & Validation")
         self.logger.info("-" * 40)
         
-        best_model, model_scores = self.evaluator.select_best_model(
-            training_results, evaluation_results
-        )
+        comprehensive_results = {
+            'training_results': training_results,
+            'evaluation_results': evaluation_results,
+            'friedman_results': friedman_results
+        }
         
-        self.logger.info(f"\n🥇 BEST MODEL SELECTED: {best_model}")
-        self.logger.info(f"   • Test AUC: {model_scores[best_model]['test_roc_auc']:.4f}")
-        self.logger.info(f"   • Composite Score: {model_scores[best_model]['composite_score']:.4f}")
-        self.logger.info("✅ CELL 6 COMPLETED - Model Selected")
+        # 1. Intelligent selection
+        selection_result = self.selector.select_best_model(comprehensive_results)
+        best_model = selection_result['selected_model']
+        
+        # 2. Final validation
+        validation_results = self.validator.validate_deployment_readiness(best_model, evaluation_results)
+        
+        # 3. Interpretability
+        interpretability_results = self.interpretability.analyze_interpretability(best_model, evaluation_results.get(best_model, {}))
+        
+        self.logger.info(f"\n🥇 FINAL SELECTION: {best_model}")
+        self.logger.info(f"   • Selection Score: {selection_result['selection_score']:.4f}")
+        self.logger.info(f"   • Deployment Status: {validation_results['deployment_status']}")
+        self.logger.info("✅ CELL 6 COMPLETED - Model Selected & Validated")
         
         # ==================================================================================
         # CELL 7: Business Impact Analysis & Visualization
         # ==================================================================================
-        self.logger.info("\n💰 [CELL 7] Business Impact Analysis & Insights")
+        self.logger.info("\n💰 [CELL 7] Business Impact Analysis & Enterprise Insights")
         self.logger.info("-" * 40)
         
-        business_results = {}
-        for model_name, result in training_results.items():
-            if result.get('success') and 'model' in result:
-                y_pred = result['model'].predict(splits['X_test'])
-                impact = self.business_analyzer.analyze_impact(
-                    splits['y_test'].values, y_pred, model_name
-                )
-                business_results[model_name] = impact
+        # Comprehensive Business Analysis
+        business_params = {
+            'revenue_per_approval': self.config.revenue_per_approval,
+            'cost_false_positive': self.config.cost_false_positive,
+            'cost_false_negative': self.config.cost_false_negative
+        }
         
-        if business_results:
-            self.business_analyzer.generate_business_case(business_results, best_model)
-            
+        business_analysis = self.business_analyst.analyze_comprehensive_impact(
+            best_model, evaluation_results, business_params
+        )
+        
+        # Generate Final Recommendations
+        final_recs = self.recommendation_engine.generate_recommendations(
+            validation_results, business_analysis
+        )
+        
         # Visualization
-        self.logger.info("\n🎨 Generating Visualizations (matching original notebook)...")
+        self.logger.info("\n🎨 Generating Visualizations (Matching V3.5 Enterprise Style)...")
         
         # 1. Target Distribution
         self.visualizer.plot_target_distribution(splits['y_train'])
         
-        # 2. Model Comparison (Dashboard)
+        # 2. Standard Training Dashboard
         self.visualizer.plot_model_comparison(evaluation_results, training_results)
         
-        # 3. ROC Curves
-        self.visualizer.plot_roc_curves(training_results, splits['X_test'], splits['y_test'])
+        # 3. Model Selection & Readiness Dashboard (6-panel)
+        self.selection_visualizer.plot_selection_dashboard(selection_result, validation_results)
         
-        # 4. Confusion Matrices
+        # 4. Enterprise Business Impact Dashboard (12-panel)
+        self.business_visualizer.create_business_dashboard(business_analysis)
+        
+        # 5. ROC Curves & Confusion Matrices
+        self.visualizer.plot_roc_curves(training_results, splits['X_test'], splits['y_test'])
         self.visualizer.plot_confusion_matrices(evaluation_results)
         
-        # 5. Feature Importance (Best Model)
+        # 6. Feature Importance (Selected Model)
         best_model_obj = training_results[best_model]['model']
         feature_names = self.feature_engineer.get_feature_names()
         self.visualizer.plot_feature_importance(best_model_obj, feature_names, best_model)
-        
-        # 6. Business Impact
-        self.visualizer.plot_business_impact(business_results)
         
         # Pipeline complete
         duration = (datetime.now() - start_time).total_seconds()
