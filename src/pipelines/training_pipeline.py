@@ -315,7 +315,6 @@ class TrainingPipeline(BasePipeline):
         
         return {
             'best_model': best_model,
-            'model_scores': model_scores,
             'training_results': training_results,
             'evaluation_results': evaluation_results,
             'business_results': business_analysis,
