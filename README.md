@@ -112,17 +112,67 @@ Unlike standard ML pipelines, this system translates technical metrics into boar
 
 ---
 
-## 📊 Pipeline Stages (Step-by-Step)
+## 📊 Pipeline Stages
 
-| Stage | Logic (src/) | Description |
-|:--- |:--- |:--- |
-| **Stage 1** | `core/` | Environment setup, GPU detection, and logging init. |
-| **Stage 2** | `data/` | Data ingestion with 10+ quality validation checks. |
-| **Stage 3** | `features/` | Advanced feature creation (Income Ratios, Age/Employment Years). |
-| **Stage 4** | `training/` | Multi-algorithm training with Optuna HPO enabled. |
-| **Stage 5** | `evaluation/` | Statistical significance testing (Friedman + Post-hoc). |
-| **Stage 6** | `evaluation/` | Multi-criteria selection & Interpretability analysis. |
-| **Stage 7** | `evaluation/` | Enterprise reporting & ROI dashboard generation. |
+### Environment Setup & Configuration
+Professional environment setup with dependency management, logging configuration, and GPU detection.
+- Comprehensive dependency checking
+- Professional logging system
+- GPU acceleration detection
+- Configuration validation
+
+### Data Loading & Validation
+Robust data loading with comprehensive validation, quality checks, and temporal integrity verification.
+- Multi-path data loading with fallbacks
+- Comprehensive data quality validation
+- Temporal data splitting for leakage prevention
+- Detailed validation reporting
+
+### Data Preprocessing & Feature Engineering
+Safe preprocessing pipeline with advanced feature engineering, proper fit-transform patterns, and leakage prevention.
+- Safe train/validation/test splitting
+- Advanced feature engineering (age groups, income ratios, employment categories)
+- Categorical encoding with unseen category handling
+- Outlier detection and treatment
+
+### Model Training & Hyperparameter Optimization
+Multi-algorithm training with Optuna optimization, GPU acceleration, and comprehensive evaluation.
+- 6 different algorithms with GPU support
+- Optuna hyperparameter optimization
+- Cross-validation with stratification
+- Performance tracking and comparison
+
+### Model Evaluation & Statistical Comparison
+Comprehensive model evaluation with statistical validation, Friedman tests, and business impact assessment.
+- Statistical significance testing (Friedman + post-hoc)
+- Business impact analysis
+- Comprehensive visualizations
+- Detailed comparison reports
+
+### Model Selection & Final Validation
+Multi-criteria model selection with deployment readiness assessment and interpretability analysis.
+- Multi-criteria decision making
+- Deployment readiness assessment
+- Model interpretability analysis
+- Final validation and recommendations
+
+### Business Impact Analysis & Insights
+Enterprise-grade business analysis with ROI calculations, stakeholder reports, and implementation roadmaps.
+- Comprehensive financial analysis (ROI, NPV, payback)
+- Risk assessment and mitigation strategies
+- Stakeholder-specific reports
+- Implementation roadmap and success metrics
+
+---
+
+## 👥 Target Audience
+
+| Audience | Use Case |
+|----------|----------|
+| 🏦 **Banking & FinTech** | Optimize credit approval workflows |
+| 📊 **Risk & Compliance** | Reduce default risk via robust ML validation |
+| 💼 **Executives** | Business impact reports with ROI & roadmap |
+| 👩‍💻 **Data Scientists** | End-to-end ML pipeline ready for deployment |
 
 ---
 
