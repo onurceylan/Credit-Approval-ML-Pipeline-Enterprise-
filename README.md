@@ -6,98 +6,115 @@
 [![Colab Ready](https://img.shields.io/badge/Google_Colab-Ready-orange.svg)](COLAB.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bu proje, kredi onayı tahminlemesi için geliştirilmiş **üretim seviyesinde (production-grade)** bir makine öğrenmesi boru hattıdır. Orijinal [V3.5 Monolitik Notebook](https://github.com/onurceylan/multimodal-credit-approval-V3.5) mimarisinden **Hibrit MLOps Mimarisine** dönüştürülmüştür.
+Machine learning pipeline for credit approval prediction featuring statistical validation, comprehensive business impact analysis, and production deployment readiness. This system provides end-to-end ML workflow from data ingestion to stakeholder reporting.
 
 ---
 
 ## 🌟 Key Features
 
-Orijinal projenin tüm gelişmiş özellikleri korunmuş ve modernize edilmiştir:
-
 - 🤖 **Multi-Algorithm Training**: XGBoost, LightGBM, CatBoost, RandomForest, GradientBoosting, LogisticRegression.
-- 📊 **Statistical Validation**: Modeller arası farkların anlamlılığını ölçen **Friedman Testi** ve post-hoc analizler.
-- 💼 **Business Impact Analysis**: Sadece Accuracy değil, **ROI (Yatırım Getirisi)**, **NPV (Net Bugünkü Değer)** ve **Payback Period** hesaplamaları.
-- 🛡️ **Bakım ve Güvenlik**: Data Leakage önlemek için "Temporal Splitting" ve "Stratified Cross-Validation".
-- 🚀 **Hybrid Architecture**: Hem **Colab Notebook** (`main.ipynb`) hem de **Terminal CLI** (`main.py`) desteği.
+- 📊 **Statistical Validation**: Friedman test with Bonferroni-corrected post-hoc analysis.
+- 💼 **Business Impact Analysis**: ROI, NPV (5-Year), and Payback Period calculations.
+- 🚀 **Production Ready**: Deployment artifacts, modular Python package, and CLI support.
+- 🛡️ **Data Leakage Prevention**: Temporal splitting and comprehensive validation.
+- ⚡ **GPU Acceleration**: CUDA support for XGBoost, LightGBM, and CatBoost.
+-  **Comprehensive Visualization**: Automated 2x2 Dashboards (Performance, Time, CV, Model Type).
 
 ---
 
-## 🏗️ Architecture
+## �️ Architecture & Project Structure
+
+This project follows a **Hybrid MLOps Architecture**, combining the interactivity of Jupyter Notebooks for exploration with the production-grade modularity of Python scripts.
 
 ```
-Credit Approval ML Pipeline (Hybrid)
-├── 📓 Interface Layer
-│   ├── main.ipynb (Colab Entry Point)
-│   └── main.py (CLI Entry Point)
-├── 📦 Core Layer (src/)
-│   ├── 🔧 Feature Engineering (Advanced preprocessing, categorical encoding)
-│   ├── 🤖 Model Factory (GPU-accelerated training)
-│   ├── 🔬 Statistical Evaluator (Friedman test, rank analysis)
-│   └── 💰 Business Analyzer (Financial impact, ROI, NPV)
-└── 📊 Output Layer
-    ├── 📈 Plots (ROC, Confusion Matrix, Feature Importance)
-    └── 📑 Reports (Business Case, Evaluation JSON)
+credit-approval/
+│
+├── main.ipynb                    # 📓 INTERACTIVE ENTRY POINT (Google Colab / Jupyter)
+├── main.py                       # 💻 CLI ENTRY POINT (Production / Terminal)
+├── COLAB.md                      # 📖 Step-by-step Google Colab Guide
+│
+├── configs/                      # ⚙️ Pipeline Configurations (YAML)
+│   ├── base.yaml                 #    General settings
+│   ├── training.yaml             #    Model hyperparams & optimization spaces
+│   └── deployment.yaml           #    Business logic & costs
+│
+├── src/                          # 📦 Core Python Package (Modular Logic)
+│   ├── core/                     #    Config, Logger, Exceptions
+│   ├── data/                     #    Data Loading & Validation
+│   ├── features/                 #    Feature Engineering & Preprocessing
+│   ├── models/                   #    Model Factory (GPU/CPU) & Registry
+│   ├── training/                 #    Trainer & Optuna Optimizer
+│   ├── evaluation/               #    Statistical & Financial Evaluators
+│   └── pipelines/                #    End-to-end Pipeline Orchestration
+│
+├── scripts/                      # 🛠️ Task-specific Scripts
+│   ├── train.py                  #    Standalone training script
+│   └── predict.py                #    Standalone inference script
+│
+├── tests/                        # 🧪 Unit Tests & Data Quality Checks
+├── docker/                       # 🐳 Containerization (Dockerfile, Compose)
+├── requirements.txt              # 📋 Environment Dependencies
+└── setup.py                      # � Package Setup (pip install -e .)
 ```
 
 ---
 
-## 🚀 Hızlı Başlangıç (Google Colab)
+## � Output Structure
 
-En kolay kullanım yolu Google Colab'dır. Detaylı rehber için **[COLAB.md](COLAB.md)** dosyasını okuyun.
+Execution results are organized into a standardized directory for versioning and reporting.
 
-1.  Projeyi Google Drive'a yükleyin.
-2.  `main.ipynb` dosyasını açın.
-3.  `Runtime` -> `Change runtime type` -> **T4 GPU** seçin.
-4.  Hücreleri çalıştırın.
+```
+ml_pipeline_output/
+├── 📁 models/                    # Serialized models (.joblib)
+├── 📁 plots/                     # High-res visualizations (Training Results, ROC, ROI)
+├── 📁 results/                   # Structured reports (JSON, Text)
+│   ├── data_quality_report.json
+│   ├── training_summary.json
+│   ├── evaluation_report.json
+│   └── business_case.txt
+└── 📁 logs/                      # Execution trace logs
+```
+
+---
+
+## 🚀 Quick Start (Google Colab)
+
+The easiest way to run this pipeline is via Google Colab.
+
+1.  Upload the project folder to your Google Drive.
+2.  Open `main.ipynb` with Google Colab.
+3.  Set Runtime to **T4 GPU** (`Runtime` -> `Change runtime type`).
+4.  Follow the instructions in the notebook cells.
+
+See **[COLAB.md](COLAB.md)** for a detailed walkthrough.
 
 ---
 
 ## 🔬 Statistical Validation (Friedman Test)
 
-Bu pipeline, modelleri kıyaslarken sadece skora bakmaz, istatistiksel olarak anlamlı fark olup olmadığını test eder:
+The pipeline implements rigorous statistical testing to compare model performance:
 
 ```python
-# Pipeline otomatik olarak hesaplar:
-stats, p_value = friedmanchisquare(*cv_matrix)
+# Friedman test for comparing multiple models across CV folds
+statistic, p_value = friedmanchisquare(*cv_matrix)
+
+# Post-hoc pairwise mapping
+ranks = rankdata([-m for m in mean_scores])
 ```
 
-Eğer `p-value < 0.05` ise, modeller arasında şans eseri olmayan gerçek bir performans farkı olduğu kanıtlanır.
+---
+
+## � Pipeline Outputs
+
+Upon completion, the pipeline generates rich visualizations:
+
+- **training_results_dashboard.png**: 2x2 Dashboard (Performance, Time, CV Results, Model Types).
+- **roc_curves.png**: Comparative ROC curves for all models.
+- **business_impact_analysis.png**: Profit vs ROI visualization.
+- **feature_importance_[Model].png**: Top predictors for the selected best model.
 
 ---
 
-## 💼 Business Impact Analysis
-
-Model başarısı finansal metriklere dökülür:
-
-- **Net Profit**: Tahmin edilen kâr.
-- **ROI %**: Yatırımın geri dönüş yüzdesi.
-- **NPV (5-Year)**: 5 yıllık net bugünkü değer projeksiyonu.
-- **Payback Period**: Yatırımın kendini amorti süresi.
-
----
-
-## 📊 Pipeline çıktıları
-
-Eğitim bittiğinde `ml_pipeline_output/plots` klasöründe şu grafikler oluşur:
-
-1.  **model_comparison.png**: Tüm metriklerin kıyaslaması.
-2.  **roc_curves.png**: Tüm modellerin ROC eğrileri.
-3.  **confusion_matrices.png**: Hata matrisleri.
-4.  **business_impact.png**: Kâr ve ROI analizi.
-5.  **feature_importance.png**: En önemli öznitelikler.
-
----
-
-## 🛠️ Troubleshooting
-
-**Soru:** `ModuleNotFoundError: No module named 'src'`
-**Çözüm:** `main.ipynb` içindeki `PROJECT_PATH` yolunu Drive'daki klasörünüzle eşleşecek şekilde güncelleyin.
-
-**Soru:** `Cannot setitem on a Categorical with a new category`
-**Çözüm:** Pipeline v3.1 güncellemesiyle bu sorun çözüldü (Kategorik veriler otomatik string'e çevriliyor).
-
----
-
-## 📄 Lisans
+## 📄 License
 
 MIT License
