@@ -69,10 +69,10 @@ graph TD
 ```text
 credit-approval/
 ├── 📁 configs/                  # Pipeline Konfigürasyonları (YAML)
-├── 📁 data/                     # Veri Setleri (Raw & Processed)
-├── 📁 docker/                   # Containerization Dosyaları
-├── 📁 ml_pipeline_output/       # Pipeline Çıktıları (Models, Plots, Results)
-├── 📁 scripts/                  # Yardımcı Betikler ve Araçlar
+├── 📁 data/                     # Veri Setleri (Lokal - Gitignore)
+├── 📁 docker/                   # Containerization Dosyaları (Docker/Compose)
+├── 📁 ml_pipeline_output/       # Pipeline Çıktıları (Modeller, Grafikler, Raporlar)
+├── 📁 scripts/                  # Yardımcı Betikler (Train/Predict)
 ├── 📁 src/                      # Ana Kaynak Kodlar (Modüler Yapı)
 │   ├── 📁 core/                 # Temel Bileşenler (Config, Logger)
 │   ├── 📁 data/                 # Veri İşleme ve Doğrulama
