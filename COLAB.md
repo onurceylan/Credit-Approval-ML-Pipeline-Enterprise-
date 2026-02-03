@@ -35,14 +35,16 @@ PROJECT_PATH = '/content/drive/MyDrive/credit-approval'
 Eğitim sonrası oluşan dosyaların anlamları:
 
 #### 📊 Grafikler (`plots/`)
-- **training_results_dashboard.png**: 2x2 Dashboard (Performans, Süre, CV, Model Tipi).
-- **business_impact_analysis.png**: Kâr ve ROI kıyaslaması.
-- **roc_curves.png**: Model başarı eğrileri.
-- **feature_importance.png**: Karar verici öznitelikler.
+- **training_results_dashboard.png**: 2x2 Model Performans özeti.
+- **business_impact_extended.png**: [YENİ] 12 Panelli Kurumsal İş Etkisi Dashboard'u (ROI, NPV, Risk, Operasyonel Hız vb.).
+- **model_selection_dashboard.png**: [YENİ] 6 Panelli Model Seçim ve Hazırlık Dashboard'u.
+- **roc_curves.png** & **confusion_matrices.png**: Standart model başarı grafikleri.
+- **feature_importance_[Model].png**: Seçilen model için en önemli karar verici öznitelikler.
 
 #### 📝 Raporlar (`results/`)
-- **Friedman Test**: Modeller arası farkın istatistiksel anlamlılığı.
-- **Business Case**: Tahmini kâr ve amortisman raporu.
+- **evaluation_report.json**: Tüm modellerin detaylı test metrikleri.
+- **business_case.txt**: ROI, Amortisman ve Finansal senaryo analizi.
+- **implementation_guide.txt**: Canlıya geçiş yol haritası ve izleme önerileri.
 
 ---
 
