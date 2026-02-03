@@ -123,6 +123,7 @@ Unlike standard ML pipelines, this system translates technical metrics into boar
 | **Stage 5: Stats** | `evaluation/` | Statistical significance testing (Friedman + Post-hoc). |
 | **Stage 6: Selection** | `evaluation/` | Multi-criteria selection & Interpretability analysis. |
 | **Stage 7: Business** | `evaluation/` | Enterprise reporting & ROI dashboard generation. |
+| **Stage 8: A/B Simulation** | `evaluation/` | Offline A/B simulation for Champion/Challenger comparison. |
 
 ---
 
@@ -171,9 +172,15 @@ Multi-criteria model selection with deployment readiness assessment and interpre
 ### Phase 7: Business Impact Analysis & Insights
 Enterprise-grade business analysis with ROI calculations, stakeholder reports, and implementation roadmaps.
 - Comprehensive financial analysis (ROI, NPV, payback)
-- Risk assessment and mitigation strategies
 - Stakeholder-specific reports
 - Implementation roadmap and success metrics
+
+### Phase 8: Offline A/B Simulation
+Simulates a production environment to compare the new model (Challenger) against a baseline (Champion).
+- Randomized group splitting (A/B)
+- Head-to-head performance comparison
+- Statistical significance (p-value) for profit lift
+- Cumulative profit simulation dashboard
 
 ---
 

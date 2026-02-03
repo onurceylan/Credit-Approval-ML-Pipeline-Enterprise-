@@ -23,6 +23,7 @@ This document tracks the evolution of the project from its initial monolithic st
 - **Language Localization**: Translated `main.ipynb` and `COLAB.md` from Turkish to English for a global audience.
 - **Directory Refinement**: Cleaned up the project structure in documentation to reflect a professional repository standard.
 - **Personalization**: Assigned project authorship to "Onur" and refined the repository's visible directory structure for maximum clarity.
+- **Simulation Layer**: Added a professional **Offline A/B Simulation** framework to compare Champion vs. Challenger models with statistical significance (p-value) and financial lift metrics.
 - **Metadata Polish**: Updated `__init__.py` and metadata files for version consistency.
 
 ## 📈 Major Milestones

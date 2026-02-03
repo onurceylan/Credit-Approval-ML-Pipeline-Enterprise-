@@ -24,7 +24,8 @@ from ..training.trainer import ModelTrainer
 from ..training.optimizer import HyperparameterOptimizer
 from ..evaluation.evaluator import ModelEvaluator, ModelSelector, FinalValidator, ModelInterpretabilityAnalyzer, FinalRecommendationEngine
 from ..evaluation.business import BusinessImpactAnalyst
-from ..evaluation.visualizer import PipelineVisualizer, BusinessVisualizationEngine, SelectionVisualizer
+from ..evaluation.visualizer import PipelineVisualizer, BusinessVisualizationEngine, SelectionVisualizer, ABTestVisualizer
+from ..evaluation.ab_tester import OfflineABSimulator
 
 
 class TrainingPipeline(BasePipeline):
@@ -68,6 +69,8 @@ class TrainingPipeline(BasePipeline):
         self.visualizer = PipelineVisualizer(self.config, self.logger)
         self.business_visualizer = BusinessVisualizationEngine(self.config, self.logger)
         self.selection_visualizer = SelectionVisualizer(self.config, self.logger)
+        self.ab_simulator = OfflineABSimulator(self.config, self.logger)
+        self.ab_visualizer = ABTestVisualizer(self.config, self.logger)
     
     def validate(self) -> bool:
         """Validate pipeline configuration."""
@@ -250,6 +253,43 @@ class TrainingPipeline(BasePipeline):
         feature_names = self.feature_engineer.get_feature_names()
         self.visualizer.plot_feature_importance(best_model_obj, feature_names, best_model)
         
+        # ==================================================================================
+        # CELL 8: Offline A/B Simulation (Challenger vs Champion)
+        # ==================================================================================
+        self.logger.info("\n🧪 [CELL 8] Offline A/B Simulation (Challenger vs Champion)")
+        self.logger.info("-" * 40)
+        
+        # For simulation, we define 'Logistic Regression' as the Champion/Baseline
+        champion_name = 'Logistic Regression'
+        if champion_name in training_results:
+            champion_model_obj = training_results[champion_name]['model']
+        else:
+            # Fallback to the first model if LR is missing
+            champion_name = list(training_results.keys())[0]
+            champion_model_obj = training_results[champion_name]['model']
+            
+        self.logger.info(f"   🥊 Champion: {champion_name}")
+        self.logger.info(f"   🎖️ Challenger: {best_model}")
+        
+        ab_results = self.ab_simulator.run_simulation(
+            champion_model=champion_model_obj,
+            challenger_model=best_model_obj,
+            X_test=splits['X_test'],
+            y_test=splits['y_test']
+        )
+        
+        # Save A/B Results
+        import json
+        from pathlib import Path
+        ab_report_path = Path(self.config.output_dir) / self.config.results_dir / "ab_test_report.json"
+        with open(ab_report_path, 'w') as f:
+            # Filter out raw_data (too large) for the JSON report
+            report_data = {k: v for k, v in ab_results.items() if k != 'raw_data'}
+            json.dump(report_data, f, indent=4)
+            
+        self.ab_visualizer.plot_simulation_results(ab_results)
+        self.logger.info("✅ CELL 8 COMPLETED - A/B Simulation Finished")
+        
         # Pipeline complete
         duration = (datetime.now() - start_time).total_seconds()
         
@@ -264,7 +304,8 @@ class TrainingPipeline(BasePipeline):
             'model_scores': model_scores,
             'training_results': training_results,
             'evaluation_results': evaluation_results,
-            'business_results': business_results,
+            'business_results': business_analysis,
+            'ab_results': ab_results,
             'feature_engineer': self.feature_engineer,
             'duration': duration
         }

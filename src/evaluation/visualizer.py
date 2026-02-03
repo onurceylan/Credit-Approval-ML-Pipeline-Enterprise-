@@ -226,6 +226,83 @@ class PipelineVisualizer:
         plt.tight_layout()
         self._save_and_show(f"feature_importance_{model_name}.png")
 
+
+class ABTestVisualizer:
+    """Visualizes Offline A/B Simulation results."""
+    
+    def __init__(self, config: PipelineConfig, logger: logging.Logger):
+        self.config = config
+        self.logger = logger
+        self.plots_dir = Path(config.output_dir) / config.plots_dir
+        self.plots_dir.mkdir(parents=True, exist_ok=True)
+
+    def _save_and_show(self, fig, filename: str):
+        path = self.plots_dir / filename
+        fig.tight_layout()
+        fig.savefig(path, bbox_inches='tight', dpi=100)
+        plt.close(fig)
+
+    def plot_simulation_results(self, ab_results: Dict[str, Any], filename: str = "ab_test_dashboard.png"):
+        """Creates a 4-panel A/B simulation dashboard."""
+        self.logger.info("📈 Plotting A/B simulation dashboard...")
+        
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+        fig.suptitle("Offline A/B Simulation Dashboard: Champion vs. Challenger", fontsize=18, fontweight='bold')
+        
+        # 1. Metric Comparison
+        metrics = ['accuracy', 'precision', 'approval_rate']
+        a_vals = [ab_results['group_a'][m] for m in metrics]
+        b_vals = [ab_results['group_b'][m] for m in metrics]
+        
+        x = np.arange(len(metrics))
+        width = 0.35
+        
+        axes[0, 0].bar(x - width/2, a_vals, width, label='Champion (A)', color='#95a5a6')
+        axes[0, 0].bar(x + width/2, b_vals, width, label='Challenger (B)', color='#3498db')
+        axes[0, 0].set_xticks(x)
+        axes[0, 0].set_xticklabels([m.replace('_', ' ').title() for m in metrics])
+        axes[0, 0].set_title("Key Performance Comparison", fontsize=14)
+        axes[0, 0].legend()
+        axes[0, 0].grid(axis='y', linestyle='--', alpha=0.7)
+
+        # 2. Cumulative Profit
+        samples_a = np.cumsum(ab_results['raw_data']['profit_samples_a'])
+        samples_b = np.cumsum(ab_results['raw_data']['profit_samples_b'])
+        
+        axes[0, 1].plot(samples_a, label='Champion (Group A)', color='#95a5a6', linewidth=2)
+        axes[0, 1].plot(samples_b, label='Challenger (Group B)', color='#2ecc71', linewidth=2)
+        axes[0, 1].set_title("Cumulative Simulated Profit", fontsize=14)
+        axes[0, 1].set_xlabel("Number of Applications")
+        axes[0, 1].set_ylabel("Total Profit ($)")
+        axes[0, 1].legend()
+        axes[0, 1].grid(linestyle='--', alpha=0.7)
+
+        # 3. Lift Summary Table
+        comp = ab_results['comparison']
+        data = [
+            ["Profit Lift", f"{comp['profit_lift_pct']:.2f}%"],
+            ["Accuracy Lift", f"{comp['accuracy_lift_pct']:.2f}%"],
+            ["P-Value", f"{comp['p_value']:.4f}"],
+            ["Significant", "YES" if comp['significant'] else "NO"]
+        ]
+        
+        table = axes[1, 0].table(cellText=data, colLabels=["Metric", "Delta / Status"], 
+                                loc='center', cellLoc='center')
+        table.set_fontsize(14)
+        table.scale(1, 4)
+        axes[1, 0].axis('off')
+        axes[1, 0].set_title("Statistical Significance & Lift", fontsize=14)
+
+        # 4. Profit Distribution
+        # Use boxplot to show distribution of profit per decision
+        axes[1, 1].boxplot([ab_results['raw_data']['profit_samples_a'], 
+                           ab_results['raw_data']['profit_samples_b']], 
+                          labels=['Champion', 'Challenger'], patch_artist=True)
+        axes[1, 1].set_title("Profit-per-Decision Distribution", fontsize=14)
+        axes[1, 1].grid(axis='y', linestyle='--', alpha=0.7)
+        
+        self._save_and_show(fig, filename)
+
     def plot_business_impact(self, business_results: Dict[str, Dict]):
         """Plot business metrics (Profit, ROI)."""
         data = []
