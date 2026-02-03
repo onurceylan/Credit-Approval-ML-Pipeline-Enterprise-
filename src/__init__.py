@@ -16,7 +16,7 @@ Modules:
 """
 
 __version__ = "3.0.0"
-__author__ = "Credit Approval Team"
+__author__ = "Onur"
 
 # Core
 from .core.config import PipelineConfig, get_config

@@ -69,7 +69,6 @@ graph TD
 ```text
 credit-approval/
 ├── 📁 configs/                  # Pipeline Configurations (YAML)
-├── 📁 data/                     # Data Sets
 ├── 📁 docker/                   # Containerization Files (Docker/Compose)
 ├── 📁 ml_pipeline_output/       # Pipeline Outputs (Models, Plots, Reports)
 ├── 📁 scripts/                  # Helper Scripts (Train/Predict)

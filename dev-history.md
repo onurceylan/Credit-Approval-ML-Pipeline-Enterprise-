@@ -22,6 +22,7 @@ This document tracks the evolution of the project from its initial monolithic st
 ## 🌍 Phase 4: Final Standardization & Global Readiness
 - **Language Localization**: Translated `main.ipynb` and `COLAB.md` from Turkish to English for a global audience.
 - **Directory Refinement**: Cleaned up the project structure in documentation to reflect a professional repository standard.
+- **Personalization**: Assigned project authorship to "Onur" and refined the repository's visible directory structure for maximum clarity.
 - **Metadata Polish**: Updated `__init__.py` and metadata files for version consistency.
 
 ## 📈 Major Milestones
