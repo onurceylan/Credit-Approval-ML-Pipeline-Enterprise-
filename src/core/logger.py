@@ -72,6 +72,7 @@ class PipelineLogger:
         self._logger = logging.getLogger(self.name)
         self._logger.setLevel(self.level)
         self._logger.handlers.clear()
+        self._logger.propagate = False
         
         # Console handler with colors
         console_handler = logging.StreamHandler(sys.stdout)
