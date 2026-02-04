@@ -33,13 +33,7 @@ class FeatureEngineer:
         self.final_features: List[str] = []
     
     def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> 'FeatureEngineer':
-        """
-        Fit feature engineering on training data.
-        
-        Args:
-            X: Training features
-            y: Training target (optional)
-        """
+        """Fit feature engineering on training data."""
         self.logger.info("🔧 Fitting feature engineer...")
         
         X_transformed = self._create_features(X.copy())
@@ -77,15 +71,7 @@ class FeatureEngineer:
         return self
     
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """
-        Transform features using fitted parameters.
-        
-        Args:
-            X: Features to transform
-        
-        Returns:
-            Transformed features
-        """
+        """Transform features using fitted parameters."""
         if not self.is_fitted:
             raise FeatureEngineeringError("FeatureEngineer not fitted. Call fit() first.")
         
@@ -102,19 +88,15 @@ class FeatureEngineer:
         # Encode categorical columns
         for col, encoder in self.encoders.items():
             if col in X_transformed.columns:
-                # Convert to string/object first to handle 'Unknown' category safely
                 X_transformed[col] = X_transformed[col].astype(object).fillna('Unknown').astype(str)
                 try:
                     X_transformed[col] = encoder.transform(X_transformed[col])
                 except ValueError:
-                    # Handle unseen categories
                     X_transformed[col] = X_transformed[col].apply(
                         lambda x: encoder.transform([x])[0] if x in encoder.classes_ else -1
                     )
         
-        # Fill remaining NaN
         X_transformed = X_transformed.fillna(0)
-        
         return X_transformed
     
     def fit_transform(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> pd.DataFrame:
@@ -122,44 +104,60 @@ class FeatureEngineer:
         return self.fit(X, y).transform(X)
     
     def _create_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Create derived features."""
+        """Create derived features matching V3.5 Enterprise logic."""
         
-        # Age features
+        # 1. Temporal & Age Features
         if 'DAYS_BIRTH' in df.columns:
-            df['AGE_YEARS'] = (-df['DAYS_BIRTH'] / 365).astype(int)
+            df['AGE_YEARS'] = (-df['DAYS_BIRTH'] / 365.25).astype(float)
             df['AGE_GROUP'] = pd.cut(
                 df['AGE_YEARS'],
-                bins=[0, 25, 35, 45, 55, 65, 100],
+                bins=[0, 25, 35, 45, 55, 65, 120],
                 labels=['18-25', '26-35', '36-45', '46-55', '56-65', '65+']
-            ).astype(str)  # Convert to string to avoid category issues
+            ).astype(str)
         
-        # Employment features
+        # 2. Employment & Stability
         if 'DAYS_EMPLOYED' in df.columns:
-            df['EMPLOYED_YEARS'] = df['DAYS_EMPLOYED'].apply(
-                lambda x: 0 if x > 0 else int(-x / 365)
-            )
+            # Handle anomalous 365243 value (retired/unemployed)
+            df['DAYS_EMPLOYED_CLEAN'] = df['DAYS_EMPLOYED'].replace(365243, 0)
+            df['EMPLOYED_YEARS'] = (-df['DAYS_EMPLOYED_CLEAN'] / 365.25).astype(float)
             df['IS_EMPLOYED'] = (df['DAYS_EMPLOYED'] < 0).astype(int)
+            
+            # Stability Score: Ratio of life spent employed
+            if 'AGE_YEARS' in df.columns:
+                df['STABILITY_INDEX'] = df['EMPLOYED_YEARS'] / (df['AGE_YEARS'] - 18).clip(lower=1)
         
-        # Income features
+        # 3. Financial & Income Features
         if 'AMT_INCOME_TOTAL' in df.columns:
-            income_median = df['AMT_INCOME_TOTAL'].median()
             df['INCOME_LOG'] = np.log1p(df['AMT_INCOME_TOTAL'])
-            df['INCOME_CATEGORY'] = pd.cut(
+            
+            # Income Categories-like branding
+            df['INCOME_BRACKET'] = pd.cut(
                 df['AMT_INCOME_TOTAL'],
-                bins=[0, 50000, 100000, 200000, float('inf')],
-                labels=['Low', 'Medium', 'High', 'Very High']
-            ).astype(str)  # Convert to string to avoid category issues
+                bins=[0, 50000, 100000, 200000, 500000, float('inf')],
+                labels=['Bronze', 'Silver', 'Gold', 'Platinum', 'Elite']
+            ).astype(str)
+            
+            # Income-to-Employment Ratio
+            if 'EMPLOYED_YEARS' in df.columns:
+                # clip to 1 to avoid infinity
+                df['INCOME_PER_YEAR_EMP'] = df['AMT_INCOME_TOTAL'] / df['EMPLOYED_YEARS'].clip(lower=1)
         
-        # Family features
-        if 'CNT_CHILDREN' in df.columns and 'CNT_FAM_MEMBERS' in df.columns:
-            df['HAS_CHILDREN'] = (df['CNT_CHILDREN'] > 0).astype(int)
-            df['FAMILY_SIZE'] = df['CNT_FAM_MEMBERS'].fillna(1)
+        # 4. Family & Demographic Features
+        if 'CNT_FAM_MEMBERS' in df.columns:
+            df['FAMILY_SIZE_LOG'] = np.log1p(df['CNT_FAM_MEMBERS'].fillna(1))
+            
+            if 'AMT_INCOME_TOTAL' in df.columns:
+                df['INCOME_PER_MEMBER'] = df['AMT_INCOME_TOTAL'] / df['CNT_FAM_MEMBERS'].fillna(1).clip(lower=1)
         
-        # Composite features
-        if 'AMT_INCOME_TOTAL' in df.columns and 'CNT_FAM_MEMBERS' in df.columns:
-            family_members = df['CNT_FAM_MEMBERS'].replace(0, 1)
-            df['INCOME_PER_PERSON'] = df['AMT_INCOME_TOTAL'] / family_members
-        
+        # 5. Composite Luxury/Risk Scores
+        cols_needed = ['AMT_INCOME_TOTAL', 'CNT_FAM_MEMBERS', 'FLAG_OWN_CAR', 'FLAG_OWN_REALTY']
+        if all(c in df.columns for c in cols_needed):
+            high_income = (df['AMT_INCOME_TOTAL'] > 200000).astype(int)
+            own_car = (df['FLAG_OWN_CAR'].isin(['Y', 1, '1'])).astype(int)
+            own_realty = (df['FLAG_OWN_REALTY'].isin(['Y', 1, '1'])).astype(int)
+            small_family = (df['CNT_FAM_MEMBERS'] <= 2).astype(int)
+            df['LUXURY_INDEX'] = high_income + own_car + own_realty + small_family
+            
         return df
     
     def get_feature_names(self) -> List[str]:

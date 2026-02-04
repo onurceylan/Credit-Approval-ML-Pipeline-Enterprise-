@@ -126,8 +126,9 @@ class PipelineConfig:
     random_state: int = 42
     cv_folds: int = 5
     test_size: float = 0.1
-    val_size: float = 0.2
+    val_size: float = 0.1
     n_jobs: int = -1
+    verbose: int = 1
     
     # Training settings
     optuna_trials: int = 50
@@ -150,10 +151,18 @@ class PipelineConfig:
     cost_false_negative: float = 500
     revenue_per_approval: float = 1200
     
+    # Implementation costs
+    infrastructure_cost: float = 50000
+    development_cost: float = 100000
+    training_cost: float = 25000
+    maintenance_cost: float = 30000
+    discount_rate: float = 0.1
+    
     # Deployment thresholds
     accuracy_threshold: float = 0.75
     confidence_threshold: float = 0.70
     stability_threshold: float = 0.05
+    interpretability_threshold: float = 0.70
     
     @classmethod
     def from_yaml(cls, config_loader: ConfigLoader) -> 'PipelineConfig':
@@ -181,9 +190,15 @@ class PipelineConfig:
             cost_false_positive=config_loader.get('business.cost_false_positive', cls.cost_false_positive),
             cost_false_negative=config_loader.get('business.cost_false_negative', cls.cost_false_negative),
             revenue_per_approval=config_loader.get('business.revenue_per_approval', cls.revenue_per_approval),
+            infrastructure_cost=config_loader.get('business.infrastructure_cost', cls.infrastructure_cost),
+            development_cost=config_loader.get('business.development_cost', cls.development_cost),
+            training_cost=config_loader.get('business.training_cost', cls.training_cost),
+            maintenance_cost=config_loader.get('business.maintenance_cost', cls.maintenance_cost),
+            discount_rate=config_loader.get('business.discount_rate', cls.discount_rate),
             accuracy_threshold=config_loader.get('deployment.accuracy_threshold', cls.accuracy_threshold),
             confidence_threshold=config_loader.get('deployment.confidence_threshold', cls.confidence_threshold),
             stability_threshold=config_loader.get('deployment.stability_threshold', cls.stability_threshold),
+            interpretability_threshold=config_loader.get('deployment.interpretability_threshold', cls.interpretability_threshold),
         )
     
     def get_output_path(self, subdir: str) -> Path:
