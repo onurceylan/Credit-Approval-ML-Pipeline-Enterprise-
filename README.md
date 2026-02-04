@@ -1,4 +1,4 @@
-# 📊 Credit Approval ML Pipeline (Enterprise)
+# 🏦 Enterprise Credit Approval ML Pipeline (V3.5 Hybrid)
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![MLOps](https://img.shields.io/badge/MLOps-Ready-brightgreen.svg)
@@ -79,6 +79,7 @@ credit-approval/
 │   ├── 📁 models/               # Model Management & Factory
 │   ├── 📁 training/             # Training & Optimization
 │   ├── 📁 evaluation/           # Evaluation & Business Analysis
+│   ├── 📁 serving/              # MLOps Deployment & Serving Utils
 │   └── 📁 pipelines/            # Pipeline Orchestration
 ├── 📁 tests/                    # Unit & Integration Tests
 ├── COLAB.md                     # Google Colab User Guide
