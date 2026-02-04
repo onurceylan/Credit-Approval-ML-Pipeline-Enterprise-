@@ -65,9 +65,8 @@ def parse_arguments():
 
 def main():
     """Main entry point."""
-    print("=" * 70)
-    print("🚀 CREDIT APPROVAL ML PIPELINE v3.0")
-    print("   MLOps-Ready Hybrid Architecture")
+    print("🚀 CREDIT APPROVAL ML PIPELINE v3.5 HYBRID")
+    print("   Clean Architecture + Professional MLOps Framework")
     print("=" * 70)
     print(f"📅 Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
@@ -117,6 +116,7 @@ def main():
         
         print(f"\n🏆 Best Model: {results['best_model']}")
         print(f"📁 Outputs saved to: {config.output_dir}/")
+        print(f"📦 Deployment package: {config.output_dir}/{config.final_model_dir}/")
         
     else:
         # Inference mode

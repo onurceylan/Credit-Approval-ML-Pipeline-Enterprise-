@@ -38,11 +38,7 @@ tqdm>=4.62.0
 python-dateutil>=2.8.0
 
 # ===========================================
-# Optional - Deep Learning (for GPU check)
+# Optional - Interpretability & Monitoring
 # ===========================================
-# torch>=1.10.0  # Uncomment if needed
-
-# ===========================================
-# Optional - Memory Profiling
-# ===========================================
-# psutil>=5.8.0  # Uncomment if needed
+shap>=0.40.0
+psutil>=5.8.0
