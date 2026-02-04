@@ -22,10 +22,11 @@ from ..models.factory import ModelFactory
 from ..models.registry import ModelRegistry
 from ..training.trainer import ModelTrainer
 from ..training.optimizer import HyperparameterOptimizer
-from ..evaluation.evaluator import ModelEvaluator, ModelSelector, FinalValidator, ModelInterpretabilityAnalyzer, FinalRecommendationEngine
+from ..evaluation.evaluator import ModelEvaluator, ModelSelector, FinalValidator, ModelInterpretabilityAnalyzer, FinalRecommendationEngine, ConfidenceAnalyzer
 from ..evaluation.business import BusinessImpactAnalyst
 from ..evaluation.visualizer import PipelineVisualizer, BusinessVisualizationEngine, SelectionVisualizer, ABTestVisualizer
 from ..evaluation.ab_testing import ABTestSimulator
+from ..serving.deploy_utils import DeploymentPackager, ProductionValidator
 
 
 class TrainingPipeline(BasePipeline):
@@ -65,12 +66,39 @@ class TrainingPipeline(BasePipeline):
         self.interpretability = ModelInterpretabilityAnalyzer(self.logger)
         self.business_analyst = BusinessImpactAnalyst(self.logger)
         self.recommendation_engine = FinalRecommendationEngine(self.logger)
+        self.confidence_analyzer = ConfidenceAnalyzer(self.logger)
         
         self.visualizer = PipelineVisualizer(self.config, self.logger)
         self.business_visualizer = BusinessVisualizationEngine(self.config, self.logger)
         self.selection_visualizer = SelectionVisualizer(self.config, self.logger)
         self.ab_simulator = None # Initialized during run with models
         self.ab_visualizer = ABTestVisualizer(self.config, self.logger)
+        
+        self.packager = DeploymentPackager(self.config, self.logger)
+        self.production_validator = ProductionValidator(self.logger)
+        
+        # Setup output directories
+        self._setup_output_dirs()
+        
+        # Handle verbosity
+        if self.config.verbose > 1:
+            self.logger.setLevel(logging.DEBUG)
+            for handler in self.logger.handlers:
+                handler.setLevel(logging.DEBUG)
+                
+    def _setup_output_dirs(self):
+        """Ensure all output directories exist."""
+        from pathlib import Path
+        dirs = [
+            self.config.output_dir,
+            self.config.get_output_path(self.config.models_dir),
+            self.config.get_output_path(self.config.plots_dir),
+            self.config.get_output_path(self.config.results_dir),
+            self.config.get_output_path(self.config.logs_dir),
+            self.config.get_output_path(self.config.final_model_dir)
+        ]
+        for d in dirs:
+            Path(d).mkdir(parents=True, exist_ok=True)
     
     def validate(self) -> bool:
         """Validate pipeline configuration."""
@@ -81,14 +109,14 @@ class TrainingPipeline(BasePipeline):
         start_time = datetime.now()
         
         # ==================================================================================
-        # CELL 1: Environment Setup (Skipped here as it's done in main.ipynb)
+        # Phase 1: Environment Setup (Skipped here as it's done in main.ipynb)
         # ==================================================================================
         self.logger.info("=" * 60)
         self.logger.info("🚀 STARTING TRAINING PIPELINE (V3.5 Hybrid Architecture)")
         self.logger.info("=" * 60)
 
         # ==================================================================================
-        # CELL 2: Data Loading & Validation
+        # Phase 2: Data Loading & Validation
         # ==================================================================================
         self.logger.info("\n📥 [CELL 2] Data Loading & Validation")
         self.logger.info("-" * 40)
@@ -104,7 +132,7 @@ class TrainingPipeline(BasePipeline):
         self.logger.info("✅ CELL 2 COMPLETED - Data Ready!")
         
         # ==================================================================================
-        # CELL 3: Data Preprocessing & Feature Engineering
+        # Phase 3: Data Preprocessing & Feature Engineering
         # ==================================================================================
         self.logger.info("\n🔧 [CELL 3] Preprocessing & Feature Engineering")
         self.logger.info("-" * 40)
@@ -140,7 +168,7 @@ class TrainingPipeline(BasePipeline):
         self.logger.info("✅ CELL 3 COMPLETED - CORRECTED Data Preprocessing & Feature Engineering Ready!")
         
         # ==================================================================================
-        # CELL 4: Model Training & Hyperparameter Optimization
+        # Phase 4: Model Training & Hyperparameter Optimization
         # ==================================================================================
         self.logger.info("\n🏋️ [CELL 4] Model Training & Optimization")
         self.logger.info("-" * 40)
@@ -166,7 +194,7 @@ class TrainingPipeline(BasePipeline):
         self.logger.info("✅ CELL 4 COMPLETED - All models trained!")
 
         # ==================================================================================
-        # CELL 5: Evaluation & Statistical Analysis
+        # Phase 5: Evaluation & Statistical Analysis
         # ==================================================================================
         self.logger.info("\n📊 [CELL 5] Model Evaluation & Statistical Comparison")
         self.logger.info("-" * 40)
@@ -181,7 +209,7 @@ class TrainingPipeline(BasePipeline):
         self.logger.info("✅ CELL 5 COMPLETED - Evaluation Finished")
 
         # ==================================================================================
-        # CELL 6: Model Selection & Final Validation
+        # Phase 6: Model Selection & Final Validation
         # ==================================================================================
         self.logger.info("\n🏆 [CELL 6] Advanced Model Selection & Validation")
         self.logger.info("-" * 40)
@@ -199,35 +227,53 @@ class TrainingPipeline(BasePipeline):
         # 2. Final validation
         validation_results = self.validator.validate_deployment_readiness(best_model, evaluation_results)
         
-        # 3. Interpretability
-        interpretability_results = self.interpretability.analyze_interpretability(best_model, evaluation_results.get(best_model, {}))
+        # 3. Interpretability & Confidence
+        model_obj = training_results[best_model]['model']
+        interpretability_results = self.interpretability.analyze_interpretability(
+            model_obj, splits['X_test'], best_model
+        )
+        
+        # 4. Confidence Profiling
+        best_eval = evaluation_results.get(best_model, {})
+        confidence_results = self.confidence_analyzer.analyze_confidence(
+            best_eval.get('prediction_probabilities'), splits['y_test']
+        )
         
         self.logger.info(f"\n🥇 FINAL SELECTION: {best_model}")
         self.logger.info(f"   • Selection Score: {selection_result['selection_score']:.4f}")
         self.logger.info(f"   • Deployment Status: {validation_results['deployment_status']}")
+        self.logger.info(f"   • Mean Confidence: {confidence_results.get('mean_confidence', 0):.2%}")
         self.logger.info("✅ CELL 6 COMPLETED - Model Selected & Validated")
         
         # ==================================================================================
-        # CELL 7: Business Impact Analysis & Visualization
+        # Phase 7: Business Impact Analysis & Visualization
         # ==================================================================================
         self.logger.info("\n💰 [CELL 7] Business Impact Analysis & Enterprise Insights")
         self.logger.info("-" * 40)
         
-        # Comprehensive Business Analysis
-        business_params = {
-            'revenue_per_approval': self.config.revenue_per_approval,
-            'cost_false_positive': self.config.cost_false_positive,
-            'cost_false_negative': self.config.cost_false_negative
-        }
-        
         business_analysis = self.business_analyst.analyze_comprehensive_impact(
-            best_model, evaluation_results, business_params
+            best_model, evaluation_results, self.config
         )
         
         # Generate Final Recommendations
         final_recs = self.recommendation_engine.generate_recommendations(
             validation_results, business_analysis
         )
+        
+        # Save Business Analysis & Recommendations
+        business_report_path = Path(self.config.output_dir) / self.config.results_dir / "business_impact_report.json"
+        with open(business_report_path, 'w') as f:
+            report_data = {
+                'business_analysis': business_analysis,
+                'final_recommendations': final_recs,
+                'selection_result': selection_result,
+                'validation_results': validation_results,
+                'confidence_analysis': confidence_results,
+                'interpretability': interpretability_results
+            }
+            # Remove non-serializable objects if any
+            json.dump(report_data, f, indent=4, default=str)
+        self.logger.info(f"   💾 Business impact & recommendations report saved")
         
         # Visualization
         self.logger.info("\n🎨 Generating Visualizations (Matching V3.5 Enterprise Style)...")
@@ -254,7 +300,7 @@ class TrainingPipeline(BasePipeline):
         self.visualizer.plot_feature_importance(best_model_obj, feature_names, best_model)
         
         # ==================================================================================
-        # CELL 8: Offline A/B Simulation (Challenger vs Champion)
+        # Phase 8: Offline A/B Simulation (Challenger vs Champion)
         # ==================================================================================
         self.logger.info("\n🧪 [CELL 8] Offline A/B Simulation (Challenger vs Champion)")
         self.logger.info("-" * 40)
@@ -304,6 +350,37 @@ class TrainingPipeline(BasePipeline):
         
         self.logger.info("✅ CELL 8 COMPLETED - A/B Simulation Finished")
         
+        # ==================================================================================
+        # Phase 9: Deployment Packaging & Production Validation
+        # ==================================================================================
+        self.logger.info("\n📦 [PHASE 9] Deployment Packaging & Validation")
+        self.logger.info("-" * 40)
+        
+        if validation_results.get('deployment_status') in ['Ready', 'Conditional']:
+            # Package the best model
+            model_path = self.config.get_output_path(self.config.models_dir) / f"{best_model}.joblib"
+            fe_path = self.config.get_output_path(self.config.models_dir) / "feature_engineer.joblib"
+            
+            # Prepare metadata for manifest
+            metadata = {
+                'features': self.feature_engineer.get_feature_names(),
+                'performance': evaluation_results[best_model],
+                'selection_rationale': selection_result['selection_rationale']
+            }
+            
+            pkg_path = self.packager.package_for_deployment(
+                best_model, str(model_path), str(fe_path), metadata
+            )
+            
+            # Validate the created package
+            deploy_dir = Path(self.config.output_dir) / self.config.final_model_dir
+            if self.production_validator.validate_package(deploy_dir):
+                self.logger.info("🚀 MODEL IS READY FOR PRODUCTION DEPLOYMENT")
+            else:
+                self.logger.warning("⚠️ Deployment package created but failed production validation")
+        else:
+            self.logger.warning("❌ Model status is 'Rejected'. Skipping deployment packaging.")
+            
         # Pipeline complete
         duration = (datetime.now() - start_time).total_seconds()
         

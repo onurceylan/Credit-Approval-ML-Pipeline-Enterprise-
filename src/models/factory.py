@@ -154,11 +154,12 @@ class ModelFactory:
         from catboost import CatBoostClassifier
         
         default_params = {
-            'iterations': 100,
+            'iterations': 1000,
             'depth': 6,
-            'learning_rate': 0.1,
+            'learning_rate': 0.05,
             'random_seed': self.config.random_state,
-            'verbose': False
+            'verbose': False,
+            'allow_writing_files': False
         }
         
         if self.config.use_gpu:
@@ -214,35 +215,45 @@ class ModelFactory:
         """Get hyperparameter search space for a model."""
         spaces = {
             'xgboost': {
-                'n_estimators': (50, 200),
-                'max_depth': (3, 8),
-                'learning_rate': (0.01, 0.3),
-                'subsample': (0.8, 1.0),
-                'colsample_bytree': (0.8, 1.0)
+                'n_estimators': (100, 1000),
+                'max_depth': (3, 15),
+                'learning_rate': (0.005, 0.3),
+                'subsample': (0.5, 1.0),
+                'colsample_bytree': (0.5, 1.0),
+                'gamma': (0, 10),
+                'reg_alpha': (0, 10),
+                'reg_lambda': (0, 10)
             },
             'lightgbm': {
-                'n_estimators': (50, 200),
-                'max_depth': (3, 10),
-                'learning_rate': (0.01, 0.3),
-                'num_leaves': (20, 100)
+                'n_estimators': (100, 1000),
+                'max_depth': (-1, 20),
+                'learning_rate': (0.005, 0.3),
+                'num_leaves': (20, 256),
+                'feature_fraction': (0.4, 1.0),
+                'bagging_fraction': (0.4, 1.0),
+                'bagging_freq': (1, 7)
             },
             'catboost': {
-                'iterations': (100, 300),
-                'depth': (4, 8),
-                'learning_rate': (0.01, 0.3)
+                'iterations': (100, 1000),
+                'depth': (4, 12),
+                'learning_rate': (0.005, 0.3),
+                'l2_leaf_reg': (1, 20),
+                'random_strength': (0, 10)
             },
             'random_forest': {
-                'n_estimators': (50, 200),
-                'max_depth': (5, 25),
-                'min_samples_split': (2, 20)
+                'n_estimators': (100, 500),
+                'max_depth': (5, 50),
+                'min_samples_split': (2, 30),
+                'min_samples_leaf': (1, 20)
             },
             'gradient_boosting': {
-                'n_estimators': (50, 200),
-                'max_depth': (3, 10),
-                'learning_rate': (0.05, 0.3)
+                'n_estimators': (100, 500),
+                'max_depth': (3, 15),
+                'learning_rate': (0.01, 0.3),
+                'subsample': (0.5, 1.0)
             },
             'logistic_regression': {
-                'C': (0.1, 10.0)
+                'C': (0.001, 1000.0)
             }
         }
         return spaces.get(model_name, {})
