@@ -206,6 +206,11 @@ class TrainingPipeline(BasePipeline):
         
         # Friedman Test
         friedman_results = self.evaluator.perform_friedman_test(training_results)
+        
+        # New: Immediate visual feedback
+        self.logger.info("📊 Generating model comparison dashboard...")
+        self.visualizer.plot_model_comparison(evaluation_results, training_results)
+        
         self.logger.info("✅ CELL 5 COMPLETED - Evaluation Finished")
 
         # ==================================================================================

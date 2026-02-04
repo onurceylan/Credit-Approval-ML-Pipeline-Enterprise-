@@ -159,7 +159,33 @@ class ModelTrainer:
             results[model_name] = result
         
         # Summary
-        successful = sum(1 for r in results.values() if r.get('success'))
-        self.logger.info(f"\n📊 Training complete: {successful}/{len(available_models)} models successful")
-        
+        self._generate_summary_table(results)
         return results
+
+    def _generate_summary_table(self, results: Dict[str, Dict]):
+        """Generate a high-impact performance ranking table."""
+        successful = [r for r in results.values() if r.get('success')]
+        if not successful:
+            self.logger.warning("\n⚠️ No models trained successfully to summarize.")
+            return
+
+        # Sort by Validation ROC-AUC
+        ranked = sorted(successful, key=lambda x: x['metrics'].get('val_roc_auc', 0), reverse=True)
+
+        self.logger.info("\n" + "=" * 60)
+        self.logger.info("📊 TRAINING SUMMARY")
+        self.logger.info("=" * 60)
+        self.logger.info("\n🏆 Model Performance Ranking (by Validation ROC-AUC):")
+        self.logger.info("-" * 80)
+
+        for i, res in enumerate(ranked):
+            m = res['metrics']
+            name = res['model_name']
+            self.logger.info(
+                f" {i+1}. {name:<18} | Val AUC: {m.get('val_roc_auc', 0):.4f} | "
+                f"Val Acc: {m.get('val_accuracy', 0):.4f} | CV: {m.get('cv_mean', 0):.4f} | "
+                f"Time: {m.get('training_time',0):.1f}s"
+            )
+        self.logger.info("-" * 80 + "\n")
+        self.logger.info(f"📊 Total Successful: {len(successful)}/{len(results)}")
+        self.logger.info("=" * 80 + "\n")

@@ -43,12 +43,19 @@ class PipelineVisualizer:
         plt.rcParams['figure.figsize'] = (10, 6)
         plt.rcParams['font.size'] = 12
     
-    def _save_and_show(self, filename: str):
-        """Save plot to file and show via matplotlib."""
+    def _save_and_show(self, filename: str, show: bool = False):
+        """Save plot to file and optionally show."""
         path = self.output_dir / filename
         plt.savefig(path, dpi=100, bbox_inches='tight')
         self.logger.info(f"   📊 Plot saved: {filename}")
+        if show or self._is_interactive():
+            plt.show()
         plt.close()
+        
+    def _is_interactive(self) -> bool:
+        """Check if running in an interactive environment (Notebook)."""
+        import sys
+        return 'ipykernel' in sys.modules
     
     def plot_target_distribution(self, y: pd.Series, title: str = "Target Distribution"):
         """Plot target class distribution."""
@@ -118,7 +125,7 @@ class PipelineVisualizer:
         plt.grid(True, alpha=0.3)
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        self._save_and_show("model_comparison_dashboard.png")
+        self._save_and_show("training_performance_dashboard.png")
 
     def plot_roc_curves(self, training_results: Dict[str, Dict], X_test: pd.DataFrame, y_test: pd.Series):
         """Plot ROC curves for all models."""
@@ -313,7 +320,9 @@ class BusinessVisualizationEngine:
         plt.title('Execution Strategy')
         
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-        plt.savefig(self.output_dir / "business_impact_extended.png", dpi=150)
+        self.logger.info(f"   📊 Dashboard saved: business_impact_dashboard.png")
+        plt.savefig(self.output_dir / "business_impact_dashboard.png", dpi=150)
+        if 'ipykernel' in str(type(plt.get_backend())): plt.show()
         plt.close()
 
 
