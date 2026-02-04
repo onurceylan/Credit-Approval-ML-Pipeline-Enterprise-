@@ -19,13 +19,13 @@ model:
   random_state: 42
   cv_folds: 5
   test_size: 0.1
-  val_size: 0.2
+  val_size: 0.1
   n_jobs: -1
 
 # Training Configuration
 training:
   optuna_trials: 50
-  optuna_timeout: 1800  # 30 minutes
+  optuna_timeout: 1800 # 30 minutes
   early_stopping_rounds: 50
 
 # GPU Configuration
@@ -33,7 +33,7 @@ gpu:
   enabled: true
   device_id: 0
 
-# Output Configuration  
+# Output Configuration
 output:
   base_dir: "ml_pipeline_output"
   models_dir: "models"
