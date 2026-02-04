@@ -207,11 +207,12 @@ class TrainingPipeline(BasePipeline):
         # Friedman Test
         friedman_results = self.evaluator.perform_friedman_test(training_results)
         
-        # New: Immediate visual feedback
+        # Immediate visual feedback
         self.logger.info("📊 Generating model comparison dashboard...")
         self.visualizer.plot_model_comparison(evaluation_results, training_results)
         
-        self.logger.info("✅ CELL 5 COMPLETED - Evaluation Finished")
+        # Log Summary (V3.5 style)
+        self.evaluator.log_evaluation_summary(evaluation_results)
 
         # ==================================================================================
         # Phase 6: Model Selection & Final Validation
@@ -248,6 +249,12 @@ class TrainingPipeline(BasePipeline):
         self.logger.info(f"   • Selection Score: {selection_result['selection_score']:.4f}")
         self.logger.info(f"   • Deployment Status: {validation_results['deployment_status']}")
         self.logger.info(f"   • Mean Confidence: {confidence_results.get('mean_confidence', 0):.2%}")
+        
+        # Master evaluation dashboard (9-panel)
+        self.visualizer.plot_comprehensive_evaluation_dashboard(
+            evaluation_results, training_results, {}, best_model
+        )
+        
         self.logger.info("✅ CELL 6 COMPLETED - Model Selected & Validated")
         
         # ==================================================================================
@@ -276,9 +283,17 @@ class TrainingPipeline(BasePipeline):
                 'confidence_analysis': confidence_results,
                 'interpretability': interpretability_results
             }
-            # Remove non-serializable objects if any
             json.dump(report_data, f, indent=4, default=str)
         self.logger.info(f"   💾 Business impact & recommendations report saved")
+        
+        # Business Summary Logs (Cell 7)
+        fin = business_analysis.get('financial_impact', {})
+        self.logger.info(f"\n✅ CELL 7 COMPLETED - Business Impact Analysis & Insights Ready!")
+        self.logger.info(f"💼 BUSINESS IMPACT ANALYSIS SUMMARY:")
+        self.logger.info(f"   • Model Recommendation: {best_model}")
+        self.logger.info(f"   • Annual Net Benefit: ${fin.get('annual_net_benefit', 0):,}")
+        self.logger.info(f"   • ROI: {fin.get('roi_percentage', 0):.1f}%")
+        self.logger.info(f"   • Payback Period: {fin.get('payback_period_years', 0):.1f} years")
         
         # Visualization
         self.logger.info("\n🎨 Generating Visualizations (Matching V3.5 Enterprise Style)...")

@@ -140,24 +140,75 @@ class ModelEvaluator:
             return {}
     
     def _save_report(self, evaluation_results: Dict[str, Dict]):
-        """Save evaluation report JSON."""
+        """Generate comprehensive evaluation reports (JSON, CSV, TXT)."""
+        self.logger.info("📋 Generating comprehensive evaluation report...")
         try:
-            report_path = Path(self.config.output_dir) / self.config.results_dir / "evaluation_report.json"
-            report_path.parent.mkdir(parents=True, exist_ok=True)
+            results_path = Path(self.config.output_dir) / self.config.results_dir
+            results_path.mkdir(parents=True, exist_ok=True)
             
+            # 1. JSON Report
+            json_path = results_path / "evaluation_report.json"
             clean_results = {}
             for name, result in evaluation_results.items():
                 clean_results[name] = {
                     k: v for k, v in result.items()
                     if k not in ['predictions', 'prediction_probabilities']
                 }
-            
-            with open(report_path, 'w') as f:
+            with open(json_path, 'w') as f:
                 json.dump(clean_results, f, indent=2, default=str)
+            self.logger.info(f"   💾 JSON report saved: {json_path.relative_to(Path.cwd()) if json_path.is_relative_to(Path.cwd()) else json_path}")
+
+            # 2. CSV Summary
+            csv_path = results_path / "evaluation_summary.csv"
+            summary_df = pd.DataFrame([
+                {
+                    'Model': name,
+                    'Accuracy': res['test_accuracy'],
+                    'ROC-AUC': res['test_roc_auc'],
+                    'F1-Score': res['test_f1']
+                } for name, res in evaluation_results.items()
+            ])
+            summary_df.to_csv(csv_path, index=False)
+            self.logger.info(f"   💾 CSV summary saved: {csv_path.relative_to(Path.cwd()) if csv_path.is_relative_to(Path.cwd()) else csv_path}")
+
+            # 3. Text Report
+            txt_path = results_path / "evaluation_report.txt"
+            self._write_text_report(txt_path, clean_results)
+            self.logger.info(f"   💾 Text report saved: {txt_path.relative_to(Path.cwd()) if txt_path.is_relative_to(Path.cwd()) else txt_path}")
+
+            self.logger.info("   💾 Evaluation reports generated successfully")
             
-            self.logger.info(f"   💾 Evaluation report saved")
         except Exception as e:
-            self.logger.warning(f"Could not save report: {str(e)}")
+            self.logger.warning(f"Could not save reports: {str(e)}")
+
+    def _write_text_report(self, path: Path, results: Dict):
+        """Write human-readable evaluation report."""
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write("CREDIT APPROVAL ML PIPELINE - EVALUATION REPORT\n")
+            f.write("=" * 50 + "\n")
+            f.write(f"Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            
+            for model, metrics in results.items():
+                f.write(f"MODEL: {model}\n")
+                f.write("-" * 20 + "\n")
+                f.write(f"Accuracy:  {metrics.get('test_accuracy', 0):.4f}\n")
+                f.write(f"ROC-AUC:   {metrics.get('test_roc_auc', 0):.4f}\n")
+                f.write(f"F1-Score:  {metrics.get('test_f1', 0):.4f}\n")
+                f.write(f"CV Mean:   {metrics.get('cv_mean', 0):.4f}\n\n")
+
+    def log_evaluation_summary(self, evaluation_results: Dict[str, Dict]):
+        """Log cell summary as shown in V3.5 Enterprise."""
+        models_count = len(evaluation_results)
+        if models_count == 0: return
+        
+        scores = [res['test_accuracy'] for res in evaluation_results.values()]
+        best_model = max(evaluation_results, key=lambda k: evaluation_results[k]['test_accuracy'])
+        
+        self.logger.info(f"✅ CELL 5 COMPLETED - Model Evaluation & Comparison Ready!")
+        self.logger.info(f"📊 Evaluation Summary:")
+        self.logger.info(f"   • Models evaluated: {models_count}")
+        self.logger.info(f"   • Best performance: {best_model} (Score: {max(scores):.4f})")
+        self.logger.info(f"   • Score range: {min(scores):.4f} - {max(scores):.4f}")
 
 
 class ConfidenceAnalyzer:

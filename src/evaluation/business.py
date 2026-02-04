@@ -60,7 +60,46 @@ class BusinessImpactAnalyst:
             'timestamp': datetime.now().isoformat()
         }
         
+        # 6. Generate Stakeholder Reports (Enterprise V3.5 style)
+        self._generate_stakeholder_reports(config)
+        
         return self.business_analysis
+
+    def _generate_stakeholder_reports(self, config: Any):
+        """Generate specialized TXT reports for different audiences."""
+        self.logger.info("📋 Generating stakeholder reports...")
+        try:
+            results_path = Path(config.output_dir) / config.results_dir
+            results_path.mkdir(parents=True, exist_ok=True)
+            
+            # 1. Executive Summary Report
+            with open(results_path / "executive_summary_report.txt", 'w', encoding='utf-8') as f:
+                f.write("BUSINESS CASE: CREDIT APPROVAL ML PIPELINE\n")
+                f.write("=" * 50 + "\n")
+                f.write(f"Model Recommendation: {self.business_analysis['executive_summary']['model_recommendation']}\n")
+                f.write(f"ROI Projection: {self.business_analysis['financial_impact']['roi_percentage']:.1f}%\n")
+                f.write(f"5Y NPV: ${self.business_analysis['financial_impact']['net_present_value_5yr']/1e6:.2f}M\n")
+            self.logger.info(f"   💾 Executive summary report saved")
+
+            # 2. Technical Implementation Report
+            with open(results_path / "technical_implementation_report.txt", 'w', encoding='utf-8') as f:
+                f.write("TECHNICAL IMPLEMENTATION GUIDE\n")
+                f.write("=" * 50 + "\n")
+                f.write("Phase 1: Environment & Orchestration\n")
+                f.write("Phase 2: Hybrid Data Protocol\n")
+                f.write("Phase 3: Model Serving & Real-time Validation\n")
+            self.logger.info(f"   💾 Technical implementation report saved")
+
+            # 3. Business Case Document
+            with open(results_path / "business_case_document.txt", 'w', encoding='utf-8') as f:
+                f.write("DETAILED BUSINESS CASE ANALYSIS\n")
+                f.write("=" * 50 + "\n")
+                f.write(f"Annual Net Benefit: ${self.business_analysis['financial_impact']['annual_net_benefit']:,}\n")
+                f.write(f"Payback Period: {self.business_analysis['financial_impact']['payback_period_years']:.2f} years\n")
+            self.logger.info(f"   💾 Business case document saved")
+
+        except Exception as e:
+            self.logger.warning(f"Could not generate stakeholder reports: {str(e)}")
 
     def _create_executive_summary(self, model_name: str, result: Dict, config: Any) -> Dict:
         accuracy = result.get('test_accuracy', 0)
